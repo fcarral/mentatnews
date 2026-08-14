@@ -91,6 +91,7 @@ const state = {
   peticion: null,       // AbortController de la carga en curso
   actual: null,
   verFull: false,
+  enHistorial: false,   // el lector metió una entrada en el historial
   feeds: [],
   folders: [],
   ultimoDia: null,
@@ -644,6 +645,12 @@ async function abrirArticulo(id) {
     $('#btn-open').href = a.url || a.site_url || '#';
     $('#btn-full').classList.remove('on');
     actualizarBotonesLector();
+    // Una sola entrada de historial por sesión de lectura: saltar de artículo
+    // en artículo con j/k no debe obligar a pulsar atrás quince veces.
+    if (!state.enHistorial) {
+      history.pushState({ mn: 'lector' }, '');
+      state.enHistorial = true;
+    }
     if (!a.read) await marcarArticulo(id, { read: true });
     $$('.arow').forEach(r => r.classList.toggle('activa', Number(r.dataset.id) === id));
 
@@ -652,11 +659,31 @@ async function abrirArticulo(id) {
   } catch (e) { toast('No se pudo abrir el artículo: ' + e.message); }
 }
 
-function cerrarLector() {
+function cerrarLector({ desdeHistorial = false } = {}) {
   state.actual = null;
   document.body.classList.remove('leyendo');
-  $('#lector-cuerpo').hidden = true;
+  const cuerpo = $('#lector-cuerpo');
+  cuerpo.hidden = true;
+  cuerpo.style.transform = '';
+  $('#lector').style.transition = '';
+  // Si el lector metió una entrada en el historial, se retira al cerrarlo a
+  // mano; cuando el cierre viene del propio historial (gesto de volver del
+  // teléfono o botón atrás), el navegador ya la quitó.
+  if (state.enHistorial) {
+    state.enHistorial = false;
+    if (!desdeHistorial) history.back();
+  }
 }
+
+// El gesto de volver del teléfono y el botón atrás del navegador cierran lo que
+// esté abierto, en vez de sacarte de la aplicación.
+window.addEventListener('popstate', () => {
+  if (!$('#modal-cmd').hidden) { cerrarPaleta(); return; }
+  const modal = $$('.modal-wrap:not([hidden])')[0];
+  if (modal) { modal.hidden = true; return; }
+  if (state.actual) { cerrarLector({ desdeHistorial: true }); return; }
+  if ($('#sidebar').classList.contains('abierta')) cerrarLateralMovil();
+});
 
 function actualizarBotonesLector() {
   const a = state.actual; if (!a) return;
@@ -714,6 +741,72 @@ $('#btn-save').addEventListener('click', () => {
 $('#btn-toggle-read').addEventListener('click', () => {
   const a = state.actual; if (a) marcarArticulo(a.id, { read: !a.read });
 });
+
+// ── Gesto de volver ───────────────────────────────────────────────────
+// Arrastrar desde el borde izquierdo cierra el artículo, como en cualquier app
+// del teléfono. En Safari el gesto nativo ya funciona gracias al historial;
+// esto es para cuando la app está instalada en la pantalla de inicio, donde ese
+// gesto no existe.
+
+const BORDE_GESTO = 34;      // desde dónde cuenta como "arrastre de volver"
+const CIERRA_EN = 92;        // cuánto hay que arrastrar para que cierre
+
+let gesto = null;
+
+function iniciarGesto(e) {
+  if (!state.actual) return;
+  const t = e.touches[0];
+  if (t.clientX > BORDE_GESTO) return;
+  gesto = { x0: t.clientX, y0: t.clientY, dx: 0, decidido: false, arrastrando: false };
+}
+
+function moverGesto(e) {
+  if (!gesto || !state.actual) return;
+  const t = e.touches[0];
+  const dx = t.clientX - gesto.x0;
+  const dy = t.clientY - gesto.y0;
+
+  // Hasta saber si el dedo va en horizontal o en vertical no se toca nada: si
+  // no, el gesto se comería el scroll de la lectura.
+  if (!gesto.decidido) {
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    gesto.decidido = true;
+    gesto.arrastrando = Math.abs(dx) > Math.abs(dy);
+    if (gesto.arrastrando) $('#lector').style.transition = 'none';
+  }
+  if (!gesto.arrastrando) return;
+
+  e.preventDefault();
+  gesto.dx = Math.max(0, dx);
+  const lector = $('#lector');
+  lector.style.transform = `translateX(${gesto.dx}px)`;
+  lector.style.boxShadow = `-14px 0 34px rgba(20,50,80,${Math.max(0, .22 - gesto.dx / 1800)})`;
+}
+
+function soltarGesto() {
+  if (!gesto || !gesto.arrastrando) { gesto = null; return; }
+  const lector = $('#lector');
+  const cierra = gesto.dx > CIERRA_EN;
+  lector.style.transition = 'transform .2s ease, box-shadow .2s ease';
+  if (cierra) {
+    lector.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      lector.style.transition = ''; lector.style.transform = ''; lector.style.boxShadow = '';
+      cerrarLector();
+    }, 190);
+  } else {
+    lector.style.transform = '';
+    lector.style.boxShadow = '';
+    setTimeout(() => { lector.style.transition = ''; }, 210);
+  }
+  gesto = null;
+}
+
+const lectorEl = $('#lector');
+lectorEl.addEventListener('touchstart', iniciarGesto, { passive: true });
+lectorEl.addEventListener('touchmove', moverGesto, { passive: false });
+lectorEl.addEventListener('touchend', soltarGesto);
+lectorEl.addEventListener('touchcancel', soltarGesto);
 
 // ── Cabecera y navegación ─────────────────────────────────────────────
 

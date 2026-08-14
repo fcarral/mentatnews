@@ -770,3 +770,9 @@ body.leyendo .lector { display:block; }
   font-family:var(--mono); font-size:11px; background:#fff;
   border:1px solid var(--edge); border-radius:4px; padding:1px 5px; color:var(--ink);
 }
+
+/* El lector se arrastra con el dedo desde el borde izquierdo; la sombra da la
+   sensación de que la lectura está por encima de la lista. */
+@media (max-width: 860px) {
+  .lector { will-change: transform; touch-action: pan-y; }
+}
