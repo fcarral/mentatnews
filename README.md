@@ -35,6 +35,14 @@ the *same* feed never merge — that's an update, not a duplicate.
 fetches and extracts the whole article into the reading pane, so you never leave for
 a tab full of ads.
 
+**Embedded posts, without the embed.** Outlets quote X posts as a `<blockquote>`
+plus X's widget script. That script is third-party, the CSP blocks it, and loading it
+would tell X who is reading what — so the quote used to render half-formed, or, when
+the outlet left only an empty link, not at all. `equis.py` resolves the post
+server-side (public syndication endpoint, no credentials) and the reader shows it in
+place: author, full text, photos, timestamp, and the video playing right there. Posts
+are cached for 30 days — a published post doesn't change.
+
 **Reading that respects you.** The layout breathes: the list uses the full width
 until you open something, then it steps aside and the article sits in a 68-character
 column. Three densities, day separators, `⌘K` palette, and Feedly-style keyboard

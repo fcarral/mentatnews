@@ -3,6 +3,12 @@
 # sin él las peticiones de API que traen su propia clave.
 
 news.ejemplo.com {
+	# Los tuits que citan los artículos se resuelven en el servidor y se pintan
+	# aquí dentro. El vídeo se sirve desde el CDN de X, así que media-src tiene
+	# que permitirlo; si tu política es más cerrada, el resto del tuit —texto,
+	# autor y fotos— se ve igual.
+	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https://video.twimg.com; connect-src 'self'; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
 	# Las peticiones con X-API-Key las valida la propia aplicación
 	@apikey {
 		header X-API-Key *

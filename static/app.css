@@ -776,3 +776,47 @@ body.leyendo .lector { display:block; }
 @media (max-width: 860px) {
   .lector { will-change: transform; touch-action: pan-y; }
 }
+
+/* ── Publicaciones de X incrustadas ─────────────────────────────────
+   El widget oficial es un script de terceros que aquí no se carga: el tuit lo
+   resuelve el servidor y se pinta con el resto del artículo. */
+.x-tarjeta {
+  margin: 1.4em 0; padding: 15px 17px;
+  border: 1px solid var(--edge); border-radius: 14px;
+  background: var(--tile); box-shadow: 0 2px 10px rgba(20,50,80,.05);
+}
+.x-cabeza { display:flex; align-items:center; gap:9px; margin-bottom:10px; }
+.x-avatar { width:38px; height:38px; border-radius:50%; flex:0 0 auto; }
+.x-quien { display:flex; flex-direction:column; min-width:0; line-height:1.25; }
+.x-logo { margin-left:auto; font-size:15px; color:var(--ink3); line-height:1; }
+.x-nombre {
+  font-family:var(--sans); font-weight:700; font-size:.88em; color:var(--ink);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.x-cuenta { font-family:var(--mono); font-size:.76em; color:var(--ink3); }
+.x-cuerpo { font-size:.95em; line-height:1.6; color:var(--ink); }
+.x-cuerpo p { margin:0 0 .6em; }
+.x-cuerpo p:last-child { margin-bottom:0; }
+.x-cuerpo:empty { display:none; }
+
+.x-medio { margin-top:12px; display:grid; gap:4px; }
+.x-medio-varias { grid-template-columns:1fr 1fr; }
+.x-medio img, .x-video {
+  width:100%; display:block; border-radius:10px;
+  border:1px solid var(--edge); background:#000;
+}
+.x-medio-varias img { aspect-ratio:1; object-fit:cover; }
+.x-video { max-height:70vh; }
+
+.x-pie { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; }
+.x-fecha { font-size:.74em; color:var(--ink3); }
+.x-ir {
+  display:inline-flex; align-items:center; gap:6px; margin-top:12px;
+  padding:7px 13px; border-radius:20px;
+  border:1px solid var(--edge); background:#fff;
+  font-family:var(--sans); font-size:.8em; font-weight:600;
+  color:var(--ink2); text-decoration:none;
+}
+.x-pie .x-ir { margin-top:0; margin-left:auto; }
+.x-ir:hover { border-color:var(--cyan); color:var(--cyan); }
+.x-ir.suelto { margin-top:0; }

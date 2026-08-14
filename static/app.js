@@ -520,6 +520,152 @@ function htmlPortada(r, tema) {
   </div>`;
 }
 
+// ── Publicaciones incrustadas ─────────────────────────────────────────
+// Los medios incrustan tuits con un <blockquote> más el script de X, que aquí
+// no se carga: es de terceros, la política de seguridad lo bloquea y de paso
+// le diría a X quién lee qué. Sin él el tuit queda como una cita descuadrada
+// —a veces un enlace vacío y nada más—, que es lo que se veía roto.
+//
+// Se resuelve en dos tiempos: primero se arma la tarjeta con lo que ya trae el
+// artículo, para que no haya hueco; después el servidor devuelve el tuit de
+// verdad (texto completo, autor, foto, vídeo) y la tarjeta se completa sola.
+
+const RE_TUIT = /(?:twitter|x)\.com\/[^/]+\/status\/(\d+)/i;
+const RE_MEDIO_X = /^https?:\/\/(?:pic\.twitter\.com|t\.co)\//i;
+
+/** "— C5 Estado de México (@C5Edomex) August 14, 2026" → nombre y cuenta. */
+function autorDelTuit(texto) {
+  const m = texto.match(/—\s*([^(]{2,60})\(@([A-Za-z0-9_]{1,20})\)/);
+  return m ? { nombre: m[1].trim(), cuenta: '@' + m[2] } : null;
+}
+
+function cabezaDeX(autor) {
+  return `<div class="x-cabeza">
+    <span class="x-logo" aria-hidden="true">𝕏</span>
+    ${autor ? `<span class="x-nombre">${esc(autor.nombre)}</span>
+               <span class="x-cuenta">${esc(autor.cuenta)}</span>`
+            : `<span class="x-nombre">Publicación en X</span>`}
+  </div>`;
+}
+
+function pieDeX(destino) {
+  return `<a class="x-ir" href="${esc(destino)}" target="_blank" rel="noopener noreferrer">
+            Ver la publicación en X ↗</a>`;
+}
+
+/** Tarjeta provisional con lo que el propio artículo trae del tuit. */
+function tarjetaDeX(cita) {
+  const enlaces = [...cita.querySelectorAll('a')];
+  const alTuit = enlaces.find(a => RE_TUIT.test(a.href));
+  const alMedio = enlaces.find(a => RE_MEDIO_X.test(a.href));
+  if (!alTuit && !alMedio) return null;
+
+  const autor = autorDelTuit(cita.textContent);
+  const parrafo = cita.querySelector('p');
+  const cuerpo = document.createElement('div');
+  cuerpo.className = 'x-cuerpo';
+  if (parrafo) {
+    cuerpo.innerHTML = parrafo.innerHTML;
+    // Hashtags y menciones se quedan en texto: sacan de la aplicación y no
+    // aportan nada dentro del artículo.
+    cuerpo.querySelectorAll('a').forEach(a => {
+      if (RE_TUIT.test(a.href) || RE_MEDIO_X.test(a.href)) { a.remove(); return; }
+      a.replaceWith(document.createTextNode(a.textContent));
+    });
+  } else {
+    cuerpo.textContent = cita.textContent.split('—')[0].trim();
+  }
+
+  const destino = (alTuit || alMedio).href;
+  const tarjeta = document.createElement('figure');
+  tarjeta.className = 'x-tarjeta';
+  const id = alTuit ? (alTuit.href.match(RE_TUIT) || [])[1] : null;
+  if (id) tarjeta.dataset.tuit = id;
+  tarjeta.innerHTML = cabezaDeX(autor);
+  tarjeta.appendChild(cuerpo);
+  tarjeta.insertAdjacentHTML('beforeend', pieDeX(destino));
+  return tarjeta;
+}
+
+function mediosDeX(t) {
+  if (t.video) {
+    return `<div class="x-medio">
+      <video class="x-video" controls preload="none" playsinline
+             poster="${esc(t.video.poster)}" style="aspect-ratio:${esc(t.video.aspecto)}">
+        <source src="${esc(t.video.mp4)}" type="video/mp4">
+      </video></div>`;
+  }
+  const fotos = (t.medios || []).filter(m => m.tipo === 'foto');
+  if (!fotos.length) return '';
+  return `<div class="x-medio${fotos.length > 1 ? ' x-medio-varias' : ''}">
+    ${fotos.slice(0, 4).map(f =>
+      `<img src="${esc(f.url)}" alt="${esc(f.alt)}" loading="lazy">`).join('')}
+  </div>`;
+}
+
+/** Sustituye la tarjeta provisional por el tuit tal cual está en X. */
+function pintarTuit(tarjeta, t) {
+  if (!t || t.error) return;
+  const avatar = t.avatar
+    ? `<img class="x-avatar" src="${esc(t.avatar)}" alt="" loading="lazy">` : '';
+  tarjeta.innerHTML =
+    `<div class="x-cabeza">
+       ${avatar}
+       <span class="x-quien">
+         <span class="x-nombre">${esc(t.autor)}</span>
+         <span class="x-cuenta">${esc(t.cuenta)}</span>
+       </span>
+       <span class="x-logo" aria-hidden="true">𝕏</span>
+     </div>
+     <div class="x-cuerpo">${esc(t.texto).replace(/\n/g, '<br>')}</div>
+     ${mediosDeX(t)}
+     <div class="x-pie">
+       ${t.fecha ? `<time class="x-fecha mono">${esc(fmtCompleta(t.fecha))}</time>` : ''}
+       ${pieDeX(t.url)}
+     </div>`;
+  tarjeta.classList.add('x-lista');
+}
+
+/** Pide al servidor los tuits que cita el artículo y completa sus tarjetas. */
+async function completarTuits(raiz, mia) {
+  const pendientes = [...raiz.querySelectorAll('.x-tarjeta[data-tuit]')];
+  if (!pendientes.length) return;
+  const ids = [...new Set(pendientes.map(t => t.dataset.tuit))].slice(0, 12);
+  try {
+    const r = await api('/api/x?ids=' + ids.join(','));
+    if (mia !== undefined && mia !== state.generacion) return;
+    pendientes.forEach(t => pintarTuit(t, r.tuits[t.dataset.tuit]));
+  } catch { /* la tarjeta provisional ya es legible */ }
+}
+
+/** Deja presentables los tuits y los enlaces sueltos a X del artículo. */
+function mejorarIncrustados(raiz) {
+  raiz.querySelectorAll('blockquote').forEach(cita => {
+    const tarjeta = tarjetaDeX(cita);
+    if (tarjeta) cita.replaceWith(tarjeta);
+  });
+  // Enlaces a un tuit que quedaron sueltos en su propio párrafo
+  raiz.querySelectorAll('p > a:only-child').forEach(a => {
+    if (!RE_TUIT.test(a.href) && !RE_MEDIO_X.test(a.href)) return;
+    if (a.closest('.x-tarjeta')) return;
+    const id = (a.href.match(RE_TUIT) || [])[1];
+    if (id) {
+      const tarjeta = document.createElement('figure');
+      tarjeta.className = 'x-tarjeta';
+      tarjeta.dataset.tuit = id;
+      tarjeta.innerHTML = cabezaDeX(null) +
+        `<div class="x-cuerpo"></div>` + pieDeX(a.href);
+      a.parentElement.replaceWith(tarjeta);
+      return;
+    }
+    const suelto = document.createElement('p');
+    suelto.innerHTML = `<a class="x-ir suelto" href="${esc(a.href)}"
+        target="_blank" rel="noopener noreferrer">Ver la publicación en X ↗</a>`;
+    a.parentElement.replaceWith(suelto);
+  });
+  completarTuits(raiz, state.generacion);
+}
+
 /** Sondea hasta que la portada recién montada sustituya a la que se mostró. */
 async function esperarPortadaNueva(folderId, tema, mia, intento = 0) {
   const caja = $('#portada');
@@ -642,6 +788,7 @@ async function abrirArticulo(id) {
     $('#lector-sub').textContent =
       [a.author, fmtCompleta(a.published_at || a.fetched_at)].filter(Boolean).join(' · ');
     $('#lector-contenido').innerHTML = a.content || a.summary || '<p>(sin contenido)</p>';
+    mejorarIncrustados($('#lector-contenido'));
     $('#btn-open').href = a.url || a.site_url || '#';
     $('#btn-full').classList.remove('on');
     actualizarBotonesLector();
@@ -718,6 +865,7 @@ async function traerTextoCompleto(id, forzar = false) {
     const r = await api(`/api/articles/${id}/fulltext${forzar ? '?refresh=1' : ''}`);
     if (state.actual?.id !== id) return;
     el.innerHTML = r.html;
+    mejorarIncrustados(el);
     state.verFull = true;
     $('#btn-full').classList.add('on');
   } catch (e) {
@@ -730,6 +878,7 @@ $('#btn-full').addEventListener('click', () => {
   const a = state.actual; if (!a) return;
   if (state.verFull) {
     $('#lector-contenido').innerHTML = a.content || a.summary || '<p>(sin contenido)</p>';
+    mejorarIncrustados($('#lector-contenido'));
     state.verFull = false;
     $('#btn-full').classList.remove('on');
   } else traerTextoCompleto(a.id);

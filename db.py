@@ -97,6 +97,14 @@ CREATE TRIGGER IF NOT EXISTS articles_ad AFTER DELETE ON articles BEGIN
     VALUES ('delete', old.id, old.title, old.content);
 END;
 
+-- Publicaciones de X ya resueltas. `datos` NULL = no se pudo traer, se
+-- guarda igual para no volver a pedirlo en cada lectura del artículo.
+CREATE TABLE IF NOT EXISTS tuits (
+    id           TEXT PRIMARY KEY,
+    datos        TEXT,
+    guardado_en  TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS api_keys (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,

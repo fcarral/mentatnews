@@ -21,6 +21,7 @@ import dedup
 import endpoints_portada
 import endpoints_aifeeds
 import endpoints_reglas
+import equis
 import extractor
 import fetcher
 import limpieza
@@ -285,6 +286,10 @@ def _prune() -> None:
              ) WHERE rn > ?)""",
         (MAX_PER_FEED,),
     )
+    # Los tuits citados por artículos que ya no existen no le sirven a nadie.
+    conn.execute(
+        """DELETE FROM tuits
+           WHERE guardado_en < strftime('%Y-%m-%dT%H:%M:%SZ','now','-60 days')""")
     conn.commit()
     db.reconciliar_contadores()  # seguro barato tras un borrado masivo
 
@@ -372,6 +377,19 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="MentatNews", lifespan=lifespan)
+@app.get("/api/x")
+async def tuits_incrustados(ids: str):
+    """Contenido de las publicaciones de X que cita un artículo.
+
+    En lote: un artículo puede citar varios tuits y no tiene sentido una ida y
+    vuelta por cada uno.
+    """
+    pedidos = [i.strip() for i in ids.split(",") if i.strip()][:12]
+    if not pedidos:
+        return {"tuits": {}}
+    return {"tuits": await equis.traer_varios(pedidos)}
+
+
 app.include_router(endpoints_portada.router)
 app.include_router(endpoints_reglas.router)
 app.include_router(endpoints_aifeeds.router)
