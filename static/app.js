@@ -729,8 +729,26 @@ function equilibrarPortada(caja) {
   if (desnivel() > debajo) rejilla.classList.remove('faldon');
 }
 
+/** Reparte los breves cuando las medidas ya son las definitivas.
+ *
+ * Medir nada más escribir el HTML da números que aún cambian: faltan la foto de
+ * la principal y las tipografías propias. Con esas medidas provisionales elegía
+ * el faldón en portadas donde estorbaba (232 px de blanco en vez de 114).
+ */
+function equilibrarCuandoAsiente(caja) {
+  const rehacer = () => { if (caja.isConnected) equilibrarPortada(caja); };
+  rehacer();                              // primera pasada: evita el salto visible
+  requestAnimationFrame(rehacer);         // ya con el primer reparto hecho
+  const img = $('.pp-img', caja);
+  if (img && !img.complete) {
+    img.addEventListener('load', rehacer, { once: true });
+    img.addEventListener('error', rehacer, { once: true });
+  }
+  document.fonts?.ready.then(rehacer);
+}
+
 function engancharPortada(caja) {
-  equilibrarPortada(caja);
+  equilibrarCuandoAsiente(caja);
   $$('[data-id]', caja).forEach(b => {
     if (b.dataset.enganchado) return;
     b.dataset.enganchado = '1';
