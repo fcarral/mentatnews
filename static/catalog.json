@@ -1,0 +1,536 @@
+{
+  "version": 2,
+  "categories": [
+    {
+      "name": "Internacional",
+      "feeds": [
+        {
+          "title": "BBC Mundo",
+          "feed_url": "https://feeds.bbci.co.uk/mundo/rss.xml",
+          "site_url": "https://www.bbc.com/mundo",
+          "lang": "es"
+        },
+        {
+          "title": "El País Internacional",
+          "feed_url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/internacional/portada",
+          "site_url": "https://elpais.com/internacional/",
+          "lang": "es"
+        },
+        {
+          "title": "Deutsche Welle Español",
+          "feed_url": "https://rss.dw.com/rdf/rss-sp-all",
+          "site_url": "https://www.dw.com/es/",
+          "lang": "es"
+        },
+        {
+          "title": "France 24 Español",
+          "feed_url": "https://www.france24.com/es/rss",
+          "site_url": "https://www.france24.com/es/",
+          "lang": "es"
+        },
+        {
+          "title": "Euronews Español",
+          "feed_url": "https://es.euronews.com/rss",
+          "site_url": "https://es.euronews.com/",
+          "lang": "es"
+        },
+        {
+          "title": "Al Jazeera",
+          "feed_url": "https://www.aljazeera.com/xml/rss/all.xml",
+          "site_url": "https://www.aljazeera.com/",
+          "lang": "en"
+        },
+        {
+          "title": "The Guardian World",
+          "feed_url": "https://www.theguardian.com/world/rss",
+          "site_url": "https://www.theguardian.com/world",
+          "lang": "en"
+        },
+        {
+          "title": "The New York Times World",
+          "feed_url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+          "site_url": "https://www.nytimes.com/section/world",
+          "lang": "en"
+        },
+        {
+          "title": "The Washington Post World",
+          "feed_url": "https://feeds.washingtonpost.com/rss/world",
+          "site_url": "https://www.washingtonpost.com/world/",
+          "lang": "en"
+        }
+      ]
+    },
+    {
+      "name": "España",
+      "feeds": [
+        {
+          "title": "El País Portada",
+          "feed_url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada",
+          "site_url": "https://elpais.com/",
+          "lang": "es"
+        },
+        {
+          "title": "El Mundo Portada",
+          "feed_url": "https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml",
+          "site_url": "https://www.elmundo.es/",
+          "lang": "es"
+        },
+        {
+          "title": "elDiario.es",
+          "feed_url": "https://www.eldiario.es/rss/",
+          "site_url": "https://www.eldiario.es/",
+          "lang": "es"
+        },
+        {
+          "title": "ABC Portada",
+          "feed_url": "https://www.abc.es/rss/atom/portada/",
+          "site_url": "https://www.abc.es/",
+          "lang": "es"
+        },
+        {
+          "title": "La Vanguardia",
+          "feed_url": "https://www.lavanguardia.com/rss/home.xml",
+          "site_url": "https://www.lavanguardia.com/",
+          "lang": "es"
+        },
+        {
+          "title": "20minutos",
+          "feed_url": "https://www.20minutos.es/rss/",
+          "site_url": "https://www.20minutos.es/",
+          "lang": "es"
+        },
+        {
+          "title": "El Confidencial",
+          "feed_url": "https://rss.elconfidencial.com/espana/",
+          "site_url": "https://www.elconfidencial.com/",
+          "lang": "es"
+        },
+        {
+          "title": "Europa Press",
+          "feed_url": "https://www.europapress.es/rss/rss.aspx",
+          "site_url": "https://www.europapress.es/",
+          "lang": "es"
+        },
+        {
+          "title": "La Razón",
+          "feed_url": "https://www.larazon.es/rss/espana.xml",
+          "site_url": "https://www.larazon.es/",
+          "lang": "es"
+        }
+      ]
+    },
+    {
+      "name": "México",
+      "feeds": [
+        {
+          "title": "El Universal",
+          "feed_url": "https://www.eluniversal.com.mx/arc/outboundfeeds/rss/",
+          "site_url": "https://www.eluniversal.com.mx/",
+          "lang": "es"
+        },
+        {
+          "title": "Excélsior",
+          "feed_url": "https://www.excelsior.com.mx/rss/",
+          "site_url": "https://www.excelsior.com.mx/",
+          "lang": "es"
+        },
+        {
+          "title": "La Jornada",
+          "feed_url": "https://www.jornada.com.mx/rss/edicion.xml",
+          "site_url": "https://www.jornada.com.mx/",
+          "lang": "es"
+        },
+        {
+          "title": "El Economista",
+          "feed_url": "https://www.eleconomista.com.mx/rss/ultimas-noticias",
+          "site_url": "https://www.eleconomista.com.mx/",
+          "lang": "es"
+        },
+        {
+          "title": "Reforma",
+          "feed_url": "https://www.reforma.com/rss/portada.xml",
+          "site_url": "https://www.reforma.com/",
+          "lang": "es"
+        },
+        {
+          "title": "El Financiero",
+          "feed_url": "https://www.elfinanciero.com.mx/rss/",
+          "site_url": "https://www.elfinanciero.com.mx/",
+          "lang": "es"
+        },
+        {
+          "title": "El Sol de México",
+          "feed_url": "https://www.elsoldemexico.com.mx/rss.xml",
+          "site_url": "https://www.elsoldemexico.com.mx/",
+          "lang": "es"
+        },
+        {
+          "title": "La Razón de México",
+          "feed_url": "https://www.razon.com.mx/arc/outboundfeeds/rss/",
+          "site_url": "https://www.razon.com.mx/",
+          "lang": "es"
+        },
+        {
+          "title": "El Heraldo de México",
+          "feed_url": "https://heraldodemexico.com.mx/rss/feed.html",
+          "site_url": "https://heraldodemexico.com.mx/",
+          "lang": "es"
+        },
+        {
+          "title": "Chilango",
+          "feed_url": "https://www.chilango.com/feed/",
+          "site_url": "https://www.chilango.com/",
+          "lang": "es"
+        }
+      ]
+    },
+    {
+      "name": "Tecnología",
+      "feeds": [
+        {
+          "title": "Xataka",
+          "feed_url": "https://www.xataka.com/index.xml",
+          "site_url": "https://www.xataka.com/",
+          "lang": "es"
+        },
+        {
+          "title": "Genbeta",
+          "feed_url": "https://www.genbeta.com/index.xml",
+          "site_url": "https://www.genbeta.com/",
+          "lang": "es"
+        },
+        {
+          "title": "Ars Technica",
+          "feed_url": "https://feeds.arstechnica.com/arstechnica/index",
+          "site_url": "https://arstechnica.com/",
+          "lang": "en"
+        },
+        {
+          "title": "The Verge",
+          "feed_url": "https://www.theverge.com/rss/index.xml",
+          "site_url": "https://www.theverge.com/",
+          "lang": "en"
+        },
+        {
+          "title": "TechCrunch",
+          "feed_url": "https://techcrunch.com/feed/",
+          "site_url": "https://techcrunch.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Wired",
+          "feed_url": "https://www.wired.com/feed/rss",
+          "site_url": "https://www.wired.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Hacker News Frontpage",
+          "feed_url": "https://hnrss.org/frontpage",
+          "site_url": "https://news.ycombinator.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Engadget",
+          "feed_url": "https://www.engadget.com/rss.xml",
+          "site_url": "https://www.engadget.com/",
+          "lang": "en"
+        },
+        {
+          "title": "MIT Technology Review",
+          "feed_url": "https://www.technologyreview.com/feed/",
+          "site_url": "https://www.technologyreview.com/",
+          "lang": "en"
+        },
+        {
+          "title": "IEEE Spectrum",
+          "feed_url": "https://spectrum.ieee.org/feeds/feed.rss",
+          "site_url": "https://spectrum.ieee.org/",
+          "lang": "en"
+        }
+      ]
+    },
+    {
+      "name": "Inteligencia Artificial",
+      "feeds": [
+        {
+          "title": "OpenAI News",
+          "feed_url": "https://openai.com/news/rss.xml",
+          "site_url": "https://openai.com/news/",
+          "lang": "en"
+        },
+        {
+          "title": "Google DeepMind",
+          "feed_url": "https://deepmind.google/blog/rss.xml",
+          "site_url": "https://deepmind.google/discover/blog/",
+          "lang": "en"
+        },
+        {
+          "title": "Google AI",
+          "feed_url": "https://blog.google/technology/ai/rss/",
+          "site_url": "https://blog.google/technology/ai/",
+          "lang": "en"
+        },
+        {
+          "title": "Google Research",
+          "feed_url": "https://research.google/blog/rss/",
+          "site_url": "https://research.google/blog/",
+          "lang": "en"
+        },
+        {
+          "title": "Meta Engineering & AI",
+          "feed_url": "https://engineering.fb.com/feed/",
+          "site_url": "https://engineering.fb.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Mistral AI",
+          "feed_url": "https://mistral.ai/news/rss",
+          "site_url": "https://mistral.ai/news/",
+          "lang": "en"
+        },
+        {
+          "title": "Hugging Face Blog",
+          "feed_url": "https://huggingface.co/blog/feed.xml",
+          "site_url": "https://huggingface.co/blog",
+          "lang": "en"
+        },
+        {
+          "title": "Simon Willison",
+          "feed_url": "https://simonwillison.net/atom/entries/",
+          "site_url": "https://simonwillison.net/",
+          "lang": "en"
+        },
+        {
+          "title": "Import AI",
+          "feed_url": "https://importai.substack.com/feed",
+          "site_url": "https://importai.substack.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Interconnects",
+          "feed_url": "https://www.interconnects.ai/feed",
+          "site_url": "https://www.interconnects.ai/",
+          "lang": "en"
+        },
+        {
+          "title": "Ars Technica AI",
+          "feed_url": "https://arstechnica.com/tag/ai/feed/",
+          "site_url": "https://arstechnica.com/ai/",
+          "lang": "en"
+        },
+        {
+          "title": "MIT Technology Review AI",
+          "feed_url": "https://www.technologyreview.com/topic/artificial-intelligence/feed/",
+          "site_url": "https://www.technologyreview.com/topic/artificial-intelligence/",
+          "lang": "en"
+        }
+      ]
+    },
+    {
+      "name": "Claude Code",
+      "feeds": [
+        {
+          "title": "Claude Code Releases (GitHub)",
+          "feed_url": "https://github.com/anthropics/claude-code/releases.atom",
+          "site_url": "https://github.com/anthropics/claude-code/releases",
+          "lang": "en"
+        },
+        {
+          "title": "Claude Code Commits (GitHub)",
+          "feed_url": "https://github.com/anthropics/claude-code/commits/main.atom",
+          "site_url": "https://github.com/anthropics/claude-code",
+          "lang": "en"
+        },
+        {
+          "title": "Hacker News: Claude Code",
+          "feed_url": "https://hnrss.org/newest?q=Claude+Code",
+          "site_url": "https://news.ycombinator.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Hacker News: Claude",
+          "feed_url": "https://hnrss.org/newest?q=Claude",
+          "site_url": "https://news.ycombinator.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Hacker News: Anthropic",
+          "feed_url": "https://hnrss.org/newest?q=Anthropic",
+          "site_url": "https://news.ycombinator.com/",
+          "lang": "en"
+        },
+        {
+          "title": "r/ClaudeAI",
+          "feed_url": "https://www.reddit.com/r/ClaudeAI/.rss",
+          "site_url": "https://www.reddit.com/r/ClaudeAI/",
+          "lang": "en"
+        }
+      ]
+    },
+    {
+      "name": "Ajedrez",
+      "feeds": [
+        {
+          "title": "Chess.com News",
+          "feed_url": "https://www.chess.com/rss/news",
+          "site_url": "https://www.chess.com/news",
+          "lang": "en"
+        },
+        {
+          "title": "Chess.com Articles",
+          "feed_url": "https://www.chess.com/rss/articles",
+          "site_url": "https://www.chess.com/articles",
+          "lang": "en"
+        },
+        {
+          "title": "Lichess Blog",
+          "feed_url": "https://lichess.org/@/Lichess/blog.atom",
+          "site_url": "https://lichess.org/blog",
+          "lang": "en"
+        },
+        {
+          "title": "ChessBase Español",
+          "feed_url": "https://es.chessbase.com/feed",
+          "site_url": "https://es.chessbase.com/",
+          "lang": "es"
+        },
+        {
+          "title": "ChessBase",
+          "feed_url": "https://en.chessbase.com/feed",
+          "site_url": "https://en.chessbase.com/",
+          "lang": "en"
+        },
+        {
+          "title": "FIDE",
+          "feed_url": "https://www.fide.com/feed/",
+          "site_url": "https://www.fide.com/news",
+          "lang": "en"
+        },
+        {
+          "title": "The Week in Chess",
+          "feed_url": "https://theweekinchess.com/twic-rss-feed",
+          "site_url": "https://theweekinchess.com/",
+          "lang": "en"
+        },
+        {
+          "title": "r/chess",
+          "feed_url": "https://www.reddit.com/r/chess/.rss",
+          "site_url": "https://www.reddit.com/r/chess/",
+          "lang": "en"
+        }
+      ]
+    },
+    {
+      "name": "Viajes",
+      "feeds": [
+        {
+          "title": "One Mile at a Time",
+          "feed_url": "https://onemileatatime.com/feed/",
+          "site_url": "https://onemileatatime.com/",
+          "lang": "en"
+        },
+        {
+          "title": "The Points Guy",
+          "feed_url": "https://thepointsguy.com/feed/",
+          "site_url": "https://thepointsguy.com/",
+          "lang": "en"
+        },
+        {
+          "title": "View from the Wing",
+          "feed_url": "https://viewfromthewing.com/feed/",
+          "site_url": "https://viewfromthewing.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Skift",
+          "feed_url": "https://skift.com/feed/",
+          "site_url": "https://skift.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Airline Weekly",
+          "feed_url": "https://airlineweekly.skift.com/feed/",
+          "site_url": "https://airlineweekly.skift.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Simple Flying",
+          "feed_url": "https://simpleflying.com/feed/",
+          "site_url": "https://simpleflying.com/",
+          "lang": "en"
+        },
+        {
+          "title": "El Viajero (El País)",
+          "feed_url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/elviajero/portada",
+          "site_url": "https://elpais.com/elviajero/",
+          "lang": "es"
+        },
+        {
+          "title": "Condé Nast Traveler España",
+          "feed_url": "https://www.traveler.es/feed/rss",
+          "site_url": "https://www.traveler.es/",
+          "lang": "es"
+        }
+      ]
+    },
+    {
+      "name": "Mercados",
+      "feeds": [
+        {
+          "title": "MarketWatch Top Stories",
+          "feed_url": "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+          "site_url": "https://www.marketwatch.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Bloomberg Markets",
+          "feed_url": "https://feeds.bloomberg.com/markets/news.rss",
+          "site_url": "https://www.bloomberg.com/markets",
+          "lang": "en"
+        },
+        {
+          "title": "Financial Times",
+          "feed_url": "https://www.ft.com/?format=rss",
+          "site_url": "https://www.ft.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Yahoo Finance",
+          "feed_url": "https://finance.yahoo.com/news/rssindex",
+          "site_url": "https://finance.yahoo.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Seeking Alpha",
+          "feed_url": "https://seekingalpha.com/feed.xml",
+          "site_url": "https://seekingalpha.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Investing.com Global",
+          "feed_url": "https://www.investing.com/rss/news.rss",
+          "site_url": "https://www.investing.com/",
+          "lang": "en"
+        },
+        {
+          "title": "Investing.com España",
+          "feed_url": "https://es.investing.com/rss/news.rss",
+          "site_url": "https://es.investing.com/",
+          "lang": "es"
+        },
+        {
+          "title": "Expansión Portada",
+          "feed_url": "https://e00-expansion.uecdn.es/rss/portada.xml",
+          "site_url": "https://www.expansion.com/",
+          "lang": "es"
+        },
+        {
+          "title": "Expansión Mercados",
+          "feed_url": "https://e00-expansion.uecdn.es/rss/mercados.xml",
+          "site_url": "https://www.expansion.com/mercados.html",
+          "lang": "es"
+        }
+      ]
+    }
+  ]
+}

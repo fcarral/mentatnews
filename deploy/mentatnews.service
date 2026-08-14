@@ -1,0 +1,16 @@
+# Copiar a /etc/systemd/system/ y ajustar rutas y usuario.
+[Unit]
+Description=MentatNews - lector RSS
+After=network.target
+
+[Service]
+Type=simple
+User=mentatnews
+WorkingDirectory=/opt/mentatnews
+EnvironmentFile=-/etc/mentatnews.env
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 127.0.0.1 --port 9160
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

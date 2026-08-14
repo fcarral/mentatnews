@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MentatNews</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#eaeff4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="/static/logo-mentat.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/logo-mentat.svg">
+<!-- Fuentes autoalojadas (@font-face en app.css). Sin CDNs. -->
+<link rel="stylesheet" href="/static/app.css?v=20260814f">
+</head>
+<body data-densidad="comoda">
+
+<a class="salto-contenido" href="#lista">Saltar al contenido</a>
+
+<header class="topnav">
+  <button class="btn ghost solo-movil" id="btn-menu" aria-label="Abrir fuentes" aria-expanded="false">☰</button>
+
+  <a class="nav-brand" href="/" title="MentatNews — inicio">
+    <img src="/static/logo-mentat.svg" alt="Mentat" class="brand-logo">
+    <span class="brand-name">MENTAT<span class="brand-sep">/</span>NEWS</span>
+  </a>
+
+  <div class="nav-actions">
+    <button class="btn ghost btn-cmd" id="btn-buscar" aria-label="Buscar e ir a">
+      <span class="lupa" aria-hidden="true">⌕</span>
+      <span class="btn-cmd-txt">Buscar o ir a…</span>
+      <kbd aria-hidden="true">⌘K</kbd>
+    </button>
+
+    <div class="densidad" role="group" aria-label="Densidad de la lista">
+      <button class="dens-btn" data-densidad="titulares" title="Solo titulares" aria-label="Solo titulares">≡</button>
+      <button class="dens-btn activa" data-densidad="comoda" title="Cómoda" aria-label="Vista cómoda">☰</button>
+      <button class="dens-btn" data-densidad="revista" title="Revista" aria-label="Vista revista">▦</button>
+    </div>
+
+    <button class="btn ghost" id="btn-refresh" title="Refrescar todo (R)" aria-label="Refrescar todas las fuentes">↻</button>
+    <button class="btn" id="btn-add">+ <span class="btn-txt">Fuente</span></button>
+    <button class="btn ghost" id="btn-settings" title="Ajustes" aria-label="Ajustes">⚙</button>
+  </div>
+</header>
+
+<div class="layout" id="layout">
+
+  <div class="scrim" id="scrim" hidden></div>
+
+  <nav class="sidebar" id="sidebar" aria-label="Fuentes">
+    <div class="side-section">
+      <button class="side-item" data-view="portada"><span class="si-icon" aria-hidden="true">◆</span><span class="si-label">Portada</span></button>
+      <button class="side-item" data-view="today"><span class="si-icon" aria-hidden="true">☀</span><span class="si-label">Hoy</span><span class="badge" id="badge-today"></span></button>
+      <button class="side-item activa" data-view="unread"><span class="si-icon" aria-hidden="true">◉</span><span class="si-label">Sin leer</span><span class="badge" id="badge-unread"></span></button>
+      <button class="side-item" data-view="all"><span class="si-icon" aria-hidden="true">≡</span><span class="si-label">Todo</span></button>
+      <button class="side-item" data-view="saved"><span class="si-icon" aria-hidden="true">★</span><span class="si-label">Guardados</span><span class="badge" id="badge-saved"></span></button>
+    </div>
+    <div class="side-section" id="tree"><!-- carpetas y fuentes --></div>
+    <div class="side-foot mono" id="side-foot"></div>
+  </nav>
+
+  <main class="panel-lista" id="panel-lista">
+    <div class="lista-head">
+      <h1 id="lista-titulo">Sin leer</h1>
+      <div class="lista-tools">
+        <button class="btn ghost small" id="btn-feed-edit" hidden>Editar fuente</button>
+        <button class="btn ghost small" id="btn-mark-read">✓ Todo leído</button>
+      </div>
+    </div>
+
+    <!-- Selector de tema: una portada a la vez, nunca todas encima -->
+    <div class="portada-temas" id="portada-temas" role="tablist" aria-label="Tema de la portada" hidden></div>
+
+    <!-- La Portada del tema elegido -->
+    <section class="portada" id="portada" hidden></section>
+
+    <div class="alist" id="lista" role="feed" aria-busy="false"></div>
+    <div class="lista-fin mono" id="lista-fin" hidden>— no hay más —</div>
+  </main>
+
+  <section class="lector" id="lector" aria-label="Artículo">
+    <article class="lector-cuerpo" id="lector-cuerpo" hidden>
+      <div class="lector-top">
+        <button class="btn ghost small" id="btn-back" aria-label="Volver a la lista">←</button>
+        <div class="lector-meta mono" id="lector-meta"></div>
+        <div class="lector-acciones">
+          <button class="btn ghost small" id="btn-full" title="Texto completo o resumen" aria-label="Alternar texto completo">¶</button>
+          <button class="btn ghost small" id="btn-save" title="Guardar (s)" aria-label="Guardar">★</button>
+          <button class="btn ghost small" id="btn-toggle-read" title="Leído o no leído (m)" aria-label="Marcar leído">◉</button>
+          <a class="btn ghost small" id="btn-open" target="_blank" rel="noopener" title="Abrir original (v)" aria-label="Abrir original">↗</a>
+        </div>
+      </div>
+      <h2 id="lector-titulo"></h2>
+      <div class="lector-sub mono" id="lector-sub"></div>
+      <div class="lector-contenido" id="lector-contenido"></div>
+    </article>
+  </section>
+
+</div>
+
+<!-- Barra inferior: solo teléfono -->
+<nav class="tabbar solo-movil" aria-label="Navegación">
+  <button class="tab-btn activa" data-view="unread"><span aria-hidden="true">◉</span>Sin leer</button>
+  <button class="tab-btn" data-view="today"><span aria-hidden="true">☀</span>Hoy</button>
+  <button class="tab-btn" data-view="portada"><span aria-hidden="true">◆</span>Portada</button>
+  <button class="tab-btn" data-view="saved"><span aria-hidden="true">★</span>Guardados</button>
+</nav>
+
+<!-- Paleta de comandos -->
+<div class="modal-wrap paleta-wrap" id="modal-cmd" hidden>
+  <div class="paleta" role="dialog" aria-modal="true" aria-label="Buscar o ir a">
+    <input id="cmd-input" type="text" placeholder="Escribe para buscar artículos o saltar a una fuente…" autocomplete="off" spellcheck="false">
+    <div class="cmd-lista" id="cmd-lista" role="listbox"></div>
+    <div class="cmd-pie mono">
+      <span><kbd>↑</kbd><kbd>↓</kbd> moverse</span>
+      <span><kbd>↵</kbd> abrir</span>
+      <span><kbd>esc</kbd> cerrar</span>
+    </div>
+  </div>
+</div>
+
+<!-- Añadir fuente -->
+<div class="modal-wrap" id="modal-add" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-titulo">
+    <div class="modal-head"><h3 id="add-titulo">Añadir fuente</h3><button class="btn ghost small modal-close" aria-label="Cerrar">✕</button></div>
+    <div class="modal-body">
+      <div class="addrow">
+        <input id="add-url" type="url" placeholder="URL del sitio o del feed RSS…" aria-label="URL del sitio o feed">
+        <button class="btn" id="btn-discover">Buscar</button>
+      </div>
+      <div class="addrow">
+        <input id="add-folder" type="text" list="folder-list" placeholder="Carpeta (opcional)" aria-label="Carpeta">
+        <datalist id="folder-list"></datalist>
+      </div>
+      <div id="discover-results"></div>
+
+      <h4 class="cat-title">Pídeselo a la IA</h4>
+      <div class="addrow">
+        <input id="ai-prompt" type="text" placeholder="p. ej. quiero seguir Fórmula 1 en español" aria-label="Describe el tema que quieres seguir">
+        <button class="btn" id="btn-ai">Sugerir</button>
+      </div>
+      <div id="ai-results"></div>
+
+      <h4 class="cat-title">Guardar un artículo por URL</h4>
+      <div class="addrow">
+        <input id="art-url" type="url" placeholder="https://…/articulo" aria-label="URL del artículo">
+        <button class="btn" id="btn-art-add">Guardar</button>
+      </div>
+
+      <h4 class="cat-title">Temas listos para usar</h4>
+      <p class="cat-nota">Cada tema añade su carpeta con las fuentes ya verificadas.</p>
+      <div id="catalog"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Ajustes -->
+<div class="modal-wrap" id="modal-settings" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="set-titulo">
+    <div class="modal-head"><h3 id="set-titulo">Ajustes</h3><button class="btn ghost small modal-close" aria-label="Cerrar">✕</button></div>
+    <div class="modal-body">
+      <div class="tabs" role="tablist">
+        <button class="tab activa" data-tab="fuentes" role="tab" aria-selected="true">Fuentes</button>
+        <button class="tab" data-tab="lectura" role="tab" aria-selected="false">Lectura</button>
+        <button class="tab" data-tab="opml" role="tab" aria-selected="false">OPML</button>
+        <button class="tab" data-tab="api" role="tab" aria-selected="false">API</button>
+      </div>
+
+      <div class="tabpane" id="tab-fuentes" role="tabpanel"></div>
+
+      <div class="tabpane" id="tab-lectura" role="tabpanel" hidden>
+        <div class="ajuste">
+          <label for="set-fuente-texto">Letra del artículo</label>
+          <select id="set-fuente-texto">
+            <option value="sans">Sans (Archivo)</option>
+            <option value="serif">Serif</option>
+          </select>
+        </div>
+        <div class="ajuste">
+          <label for="set-escala">Tamaño de letra <em>(toda la app)</em></label>
+          <input type="range" id="set-escala" min="90" max="145" step="5" value="100">
+          <span class="mono" id="set-escala-val">100 %</span>
+        </div>
+        <div class="ajuste">
+          <label for="set-tamano">Tamaño del artículo</label>
+          <input type="range" id="set-tamano" min="14" max="22" step="1" value="16">
+          <span class="mono" id="set-tamano-val">16 px</span>
+        </div>
+        <div class="ajuste">
+          <label for="set-ancho">Ancho de columna</label>
+          <input type="range" id="set-ancho" min="58" max="86" step="2" value="68">
+          <span class="mono" id="set-ancho-val">68 car.</span>
+        </div>
+        <div class="ajuste">
+          <label for="set-scroll-leido">Marcar leído al pasar de largo</label>
+          <input type="checkbox" id="set-scroll-leido">
+        </div>
+        <p class="ajuste-ejemplo" id="ajuste-ejemplo">Así se verá el cuerpo de tus artículos. La medida cómoda de lectura ronda los 65 a 75 caracteres por línea: más ancho cansa la vista al saltar de renglón.</p>
+      </div>
+
+      <div class="tabpane" id="tab-opml" role="tabpanel" hidden>
+        <p>Importa tu suscripción desde Feedly u otro lector (archivo OPML).</p>
+        <div class="addrow">
+          <input type="file" id="opml-file" accept=".opml,.xml,text/xml" aria-label="Archivo OPML">
+          <button class="btn" id="btn-opml-import">Importar</button>
+        </div>
+        <p style="margin-top:14px"><a class="btn ghost" href="/api/opml/export">⬇ Exportar OPML</a></p>
+      </div>
+
+      <div class="tabpane" id="tab-api" role="tabpanel" hidden>
+        <p>Claves para consumir la API desde tu software (<span class="mono">X-API-Key</span>).
+           Por ejemplo <span class="mono">GET /api/articles?unread=1</span>.</p>
+        <div class="addrow">
+          <input id="key-name" type="text" placeholder="Nombre de la clave (p. ej. mentatfin)" aria-label="Nombre de la clave">
+          <button class="btn" id="btn-key-create">Crear clave</button>
+        </div>
+        <div id="key-new" class="key-new mono" hidden></div>
+        <table class="table" id="key-table"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast mono" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="/static/app.js?v=20260814f"></script>
+</body>
+</html>

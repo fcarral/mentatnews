@@ -1,0 +1,28 @@
+# MentatNews no tiene login propio: la autenticación la pone el proxy.
+# Este ejemplo delega en un servicio de autenticación externo y deja pasar
+# sin él las peticiones de API que traen su propia clave.
+
+news.ejemplo.com {
+	# Las peticiones con X-API-Key las valida la propia aplicación
+	@apikey {
+		header X-API-Key *
+		path /api/*
+	}
+	handle @apikey {
+		reverse_proxy localhost:9160
+	}
+
+	# Todo lo demás pasa por tu autenticación
+	handle {
+		forward_auth localhost:9120 {
+			uri /validate
+		}
+		reverse_proxy localhost:9160
+	}
+
+	# La aplicación cambia a menudo: que nadie fije el HTML ni el JS
+	@volatil path / /index.html /static/app.js /static/app.css
+	header @volatil Cache-Control "no-store, must-revalidate"
+
+	encode gzip
+}
