@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 
 import anthropic
@@ -55,7 +56,13 @@ ESQUEMA = {
     "additionalProperties": False,
 }
 
-SISTEMA = """Eres el jefe de redacción de la portada de un tema en MentatNews, el lector de noticias personal de Felipe (México, zona horaria CST).
+# Quién lee la portada. Ayuda al modelo a calibrar el tono y qué destacar.
+PERFIL = os.environ.get(
+    "MENTATNEWS_PERFIL",
+    "una persona que sigue este tema de cerca y quiere enterarse rápido",
+)
+
+SISTEMA = f"""Eres el jefe de redacción de la portada de un tema en MentatNews, un lector de noticias personal. Quien la lee es {PERFIL}.
 
 Se te entrega la lista de artículos sin leer de UNA carpeta temática. Tu trabajo es montar la primera plana de ese tema.
 
