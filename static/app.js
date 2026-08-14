@@ -115,6 +115,9 @@ function aplicarPrefs() {
   raiz.setProperty('--lectura-fam', prefs.familia === 'serif'
     ? 'Georgia, "Times New Roman", serif' : "'IBM Plex Sans', system-ui, sans-serif");
   $$('.dens-btn').forEach(b => b.classList.toggle('activa', b.dataset.densidad === prefs.densidad));
+  // Otra letra cambia las alturas: los breves puede que ya no vayan donde iban.
+  const portada = $('#portada');
+  if (portada && !portada.hidden) equilibrarPortada(portada);
 }
 function guardarPrefs() {
   localStorage.setItem('mn_densidad', prefs.densidad);
@@ -502,10 +505,15 @@ function htmlPortada(r, tema) {
     <div class="portada-rejilla">
       <button class="pp-principal" data-id="${pr.id}">
         <h2 class="pp-titulo">${esc(pr.title)}</h2>
-        ${p.principal.motivo ? `<p class="pp-motivo">${esc(p.principal.motivo)}</p>` : ''}
+        ${/* Una sola entradilla. Cuando la principal no traía foto salían el
+              motivo (en español, de la edición) y el extracto del feed (a
+              menudo en inglés) diciendo lo mismo, uno debajo del otro. */
+          p.principal.motivo
+            ? `<p class="pp-motivo">${esc(p.principal.motivo)}</p>`
+            : (extractoPortada(pr) ? `<p class="pp-extracto">${esc(extractoPortada(pr))}</p>` : '')}
         ${pr.image_url
           ? `<img class="pp-img" src="${esc(pr.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`
-          : (extractoPortada(pr) ? `<p class="pp-extracto">${esc(extractoPortada(pr))}</p>` : '')}
+          : ''}
         <div class="pp-fuente">${fuente(pr)}</div>
       </button>
       ${secundarias ? `<div class="pp-secundarias">
@@ -690,7 +698,39 @@ async function esperarPortadaNueva(folderId, tema, mia, intento = 0) {
   } catch { $('.portada-actualizando')?.remove(); }
 }
 
+/** Coloca los breves donde dejen las dos columnas más parejas.
+ *
+ * Con una principal grande —sobre todo si trae foto— la columna de al lado se
+ * quedaba corta y sobraba medio palmo de blanco a la derecha; con una principal
+ * escueta pasaba lo contrario. En vez de adivinarlo, se prueban las dos
+ * disposiciones y se mide. Son dos reflujos y ninguno llega a pintarse.
+ */
+function equilibrarPortada(caja) {
+  const rejilla = $('.portada-rejilla', caja);
+  const principal = $('.pp-principal', caja);
+  const secundarias = $('.pp-secundarias', caja);
+  const breves = $('.pp-breves', caja);
+  if (!rejilla || !principal || !secundarias || !breves) return;
+  if (!window.matchMedia('(min-width: 900px)').matches) {
+    rejilla.classList.remove('faldon');
+    return;
+  }
+
+  const desnivel = () => {
+    const izquierda = rejilla.classList.contains('faldon')
+      ? principal.getBoundingClientRect().bottom
+      : breves.getBoundingClientRect().bottom;
+    return Math.abs(izquierda - secundarias.getBoundingClientRect().bottom);
+  };
+
+  rejilla.classList.remove('faldon');
+  const debajo = desnivel();
+  rejilla.classList.add('faldon');
+  if (desnivel() > debajo) rejilla.classList.remove('faldon');
+}
+
 function engancharPortada(caja) {
+  equilibrarPortada(caja);
   $$('[data-id]', caja).forEach(b => {
     if (b.dataset.enganchado) return;
     b.dataset.enganchado = '1';
@@ -727,6 +767,10 @@ async function portadaConSelector() {
       aria-selected="${t.id === activo.id}" data-id="${t.id}" data-nombre="${esc(t.name)}">
       ${esc(t.name)}${sinLeer ? `<span class="ptab-n">${sinLeer}</span>` : ''}</button>`;
   }).join('');
+
+  // La tira arranca en el tema que se estaba viendo: si no, en el teléfono la
+  // pestaña marcada quedaba fuera de pantalla y no se sabía qué se está leyendo.
+  $('.ptab.activa', pestanas)?.scrollIntoView({ block: 'nearest', inline: 'center' });
 
   $$('.ptab', pestanas).forEach(b => b.addEventListener('click', () => {
     const id = Number(b.dataset.id);
@@ -1639,3 +1683,13 @@ cargarLateral()
   .catch(e => toast('No se pudo cargar: ' + e.message));
 
 setInterval(refrescarContadores, 90 * 1000);
+
+// Al cambiar el ancho de la ventana la portada se vuelve a repartir.
+let _reequilibrio;
+window.addEventListener('resize', () => {
+  clearTimeout(_reequilibrio);
+  _reequilibrio = setTimeout(() => {
+    const portada = $('#portada');
+    if (portada && !portada.hidden) equilibrarPortada(portada);
+  }, 180);
+});

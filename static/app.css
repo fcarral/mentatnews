@@ -342,7 +342,7 @@ body[data-densidad="revista"]:not(.leyendo) .arow { padding-left:0; padding-righ
 
 .portada-temas {
   position:sticky; top:59px; z-index:15;
-  display:flex; gap:6px; overflow-x:auto; scrollbar-width:none;
+  display:flex; flex-wrap:wrap; gap:6px; overflow-x:auto; scrollbar-width:none;
   padding: 10px var(--pad-lat);
   /* Fondo opaco: con el degradado translúcido, la portada se transparentaba por
      debajo de las pestañas al hacer scroll y los textos se pisaban. */
@@ -397,6 +397,14 @@ body[data-densidad="revista"]:not(.leyendo) .arow { padding-left:0; padding-righ
   .pp-principal { grid-area: principal; }
   .pp-secundarias { grid-area: secundarias; border-left:1px solid var(--rule); padding-left:30px; }
   .pp-breves { grid-area: breves; }
+  /* Los breves tienen dos sitios posibles: bajo la principal, o de faldón a
+     todo el ancho. Cuál queda mejor depende de lo que traiga cada portada —una
+     principal con foto mide el doble y dejaba medio palmo de blanco al lado—,
+     así que lo decide equilibrarPortada() midiendo las dos. */
+  .portada-rejilla.faldon {
+    grid-template-areas: "principal secundarias" "breves breves";
+  }
+  .portada-rejilla.faldon .pp-breves { margin-top:4px; }
 }
 
 .pp-rotulo {
@@ -683,6 +691,7 @@ body.leyendo .lector { display:block; }
   }
   body.leyendo .lector { display:block; }
   #btn-back { display:inline-flex; }
+  .portada-temas { flex-wrap:nowrap; }   /* en el móvil, tira deslizable */
   .solo-movil { display:inline-flex; }
   .densidad { display:none; }
 

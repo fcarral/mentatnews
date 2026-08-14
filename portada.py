@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from datetime import datetime, timedelta, timezone
 
 import anthropic
@@ -56,13 +55,7 @@ ESQUEMA = {
     "additionalProperties": False,
 }
 
-# Quién lee la portada. Ayuda al modelo a calibrar el tono y qué destacar.
-PERFIL = os.environ.get(
-    "MENTATNEWS_PERFIL",
-    "una persona que sigue este tema de cerca y quiere enterarse rápido",
-)
-
-SISTEMA = f"""Eres el jefe de redacción de la portada de un tema en MentatNews, un lector de noticias personal. Quien la lee es {PERFIL}.
+SISTEMA = """Eres el jefe de redacción de la portada de un tema en MentatNews, el lector de noticias personal de Felipe (México, zona horaria CST).
 
 Se te entrega la lista de artículos sin leer de UNA carpeta temática. Tu trabajo es montar la primera plana de ese tema.
 
@@ -73,10 +66,26 @@ Reglas:
 - Deja fuera lo repetido, lo promocional y lo trivial. No tienes que colocar todos los artículos: si un tema trae poco de valor, una portada corta es la respuesta correcta.
 - Es una portada de HOY: prioriza lo publicado en las últimas 48 horas. Solo sube algo más antiguo cuando siga siendo claramente lo más importante del tema y no haya nada reciente que lo desplace.
 - `motivo` explica en UNA frase por qué esa nota merece ese lugar. Escribe para alguien que aún no la ha leído: di qué pasó y por qué importa, no "es relevante para el sector".
-- `resumen`: dos o tres frases sobre cómo viene el día en este tema. Concreto, sin relleno, sin adjetivos de más. Si el día está flojo, dilo.
+- `resumen`: DOS frases, 300 caracteres como máximo, sobre cómo viene el día en este tema. Concreto, sin relleno, sin adjetivos de más. Si el día está flojo, dilo. Es la entradilla de la portada, no un boletín: en un teléfono todo lo que ocupe empuja los titulares fuera de la pantalla.
 - Español de México, tono sobrio, sin emojis y sin signos de exclamación.
 
 Solo puedes usar los identificadores numéricos que aparecen en la lista. No inventes ninguno y no repitas un id en dos secciones."""
+
+
+TOPE_RESUMEN = 340
+
+
+def _acortar(texto: str, tope: int = TOPE_RESUMEN) -> str:
+    """Recorta por la última frase que quepa; el modelo se pasa a menudo."""
+    texto = (texto or "").strip()
+    if len(texto) <= tope:
+        return texto
+    corte = max(texto.rfind(". ", 0, tope), texto.rfind("? ", 0, tope),
+                texto.rfind("! ", 0, tope))
+    if corte > tope * 0.4:
+        return texto[:corte + 1]
+    espacio = texto.rfind(" ", 0, tope)
+    return texto[:espacio if espacio > 0 else tope].rstrip(" ,;:") + "…"
 
 
 def _candidatos(articulos: list[dict]) -> list[dict]:
@@ -160,7 +169,7 @@ def _validar(datos: dict, ids_validos: set[int], articulos: list[dict]) -> dict:
     breves = [i for i in datos.get("breves", []) if admitir(i)][:8]
 
     return {
-        "resumen": (datos.get("resumen") or "").strip(),
+        "resumen": _acortar(datos.get("resumen") or ""),
         "principal": {"id": principal["id"], "motivo": (principal.get("motivo") or "").strip()},
         "secundarias": [{"id": s["id"], "motivo": (s.get("motivo") or "").strip()}
                         for s in secundarias],
