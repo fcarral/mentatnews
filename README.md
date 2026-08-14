@@ -145,6 +145,5 @@ i18n extraction would be a genuinely useful first contribution.
 
 MIT — see [LICENSE](LICENSE). Use it, fork it, sell it, whatever helps.
 
-**Trademarks are not part of the licence.** The MIT grant covers the code. The
-MENTAT name and the logo in `static/logo-mentat.svg` are the author's marks — if you
-fork this, swap the logo and pick your own name. Everything else is yours to take.
+The MIT grant covers the code. The MENTAT name and logo are the author's marks and
+aren't part of it — see [TRADEMARK.md](TRADEMARK.md). Fork it, rename it, ship it.
