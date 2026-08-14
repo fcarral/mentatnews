@@ -41,6 +41,27 @@ column. Three densities, day separators, `⌘K` palette, and Feedly-style keyboa
 shortcuts that do **not** hijack `Ctrl+R` or `Cmd+S`. Font scale from 90% to 145%
 recomposes the whole page. Works on a phone.
 
+**Advanced search.** Real FTS5 operators — `incendio AND huelva`, `a OR b`, `-word`
+to exclude, `"exact phrase"`, `incend*` prefixes, parentheses — plus field filters:
+`fuente:xataka`, `tema:España`, `autor:name`, `desde:7d`, `hasta:2026-08-01`,
+`estado:sinleer`, `tiene:imagen`.
+
+**Mute filters and keyword alerts.** One engine, two uses: mute hides a matching
+article, alert highlights it. Match on title, summary, author, site or everything;
+with contains / whole-word / exact / starts / ends / regex; scoped to a folder if you
+want. Accent- and case-insensitive by default, so `peliculas` finds *Películas*.
+5,000 articles against 20 rules in 0.10 s. Feedly caps these at 5 and 4 — there's no
+cap here.
+
+A mute filter **doesn't delete, it marks**. You can always see what's being hidden,
+and removing the rule brings the articles back.
+
+**AI Feeds.** Describe a topic in your own words and it behaves like a folder: every
+incoming article gets classified by Haiku, in batches, in the background. Say what
+you *don't* want too — it works better. Discarded articles are recorded so the same
+ones are never re-sent to the model. Feedly limits you to two of these on its top
+tier; here you can have as many as you like.
+
 **An API for your own software.** Create a key in Settings → API and read your feed
 programmatically: `GET /api/articles?unread=1` with an `X-API-Key` header.
 
@@ -112,6 +133,9 @@ Open the app and hit **+ Fuente**. Three ways in:
 | `fetcher.py` | Feed download and parsing, with an allowlist HTML sanitiser |
 | `extractor.py` | Full-text extraction (trafilatura, with an lxml fallback) |
 | `limpieza.py` | Noise removal and featured-image detection |
+| `busqueda.py` | Advanced search parser (operators, phrases, field filters) |
+| `reglas.py` | Mute-filter and alert engine |
+| `aifeeds.py` | Natural-language topic classifier (Haiku) |
 | `dedup.py` | Groups the same story across outlets (inverted index + union-find) |
 | `netguard.py` | SSRF protection: validates every redirect hop |
 | `portada.py` | The Front Page editor prompt and its validation |

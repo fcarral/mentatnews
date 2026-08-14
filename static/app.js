@@ -144,6 +144,7 @@ async function cargarLateral() {
   $('#badge-unread').textContent = st.unread || '';
   $('#badge-today').textContent = st.today || '';
   $('#badge-saved').textContent = st.saved || '';
+  $('#badge-alertas').textContent = st.alertas || '';
   $('#side-foot').innerHTML =
     `${st.feeds} fuentes · ${st.articles} artículos` +
     (st.feeds_error ? `<br><span style="color:var(--accent)">${st.feeds_error} con error</span>` : '');
@@ -213,6 +214,7 @@ async function cargarLateral() {
   (porCarpeta.get(0) || []).forEach(f => arbol.appendChild(filaFeed(f)));
 
   marcarActiva();
+  pintarFeedsIA().catch(() => {});
   $('#folder-list').innerHTML = state.folders.map(f => `<option value="${esc(f.name)}">`).join('');
 }
 
@@ -223,6 +225,7 @@ async function refrescarContadores() {
     $('#badge-unread').textContent = st.unread || '';
     $('#badge-today').textContent = st.today || '';
     $('#badge-saved').textContent = st.saved || '';
+    $('#badge-alertas').textContent = st.alertas || '';
   } catch {}
 }
 
@@ -241,12 +244,15 @@ function marcarActiva() {
 
 function consultaVista() {
   const v = state.view, p = new URLSearchParams();
+  if (v.type === 'alertas') p.set('alertas', 1);
+  if (v.type === 'aifeed') p.set('ai_feed', v.id);
   if (v.type === 'unread') p.set('unread', 1);
   if (v.type === 'today') p.set('today', 1);
   if (v.type === 'saved') p.set('saved', 1);
   if (v.type === 'feed') p.set('feed_id', v.id);
   if (v.type === 'folder') p.set('folder_id', v.id);
   if (v.type === 'search') p.set('q', v.q);
+  if (v.type === 'silenciados') { p.set('incluir_silenciados', 1); p.set('solo_silenciados', 1); }
   if (state.cursor) p.set('before_id', state.cursor);
   p.set('limit', 50);
   return p;
@@ -254,7 +260,8 @@ function consultaVista() {
 
 function tituloVista() {
   const v = state.view;
-  return { unread: 'Sin leer', today: 'Hoy', all: 'Todo', saved: 'Guardados', portada: 'Portada' }[v.type]
+  return { unread: 'Sin leer', today: 'Hoy', all: 'Todo', saved: 'Guardados',
+           portada: 'Portada', alertas: 'Alertas' }[v.type]
     || (v.type === 'search' ? `Búsqueda: ${v.q}` : v.title || '');
 }
 
@@ -1097,10 +1104,153 @@ $('#btn-art-add').addEventListener('click', async () => {
   btn.disabled = false; btn.textContent = 'Guardar';
 });
 
+// ── Filtros de silencio y alertas ─────────────────────────────────────
+
+const ETIQUETA_CAMPO = { cualquiera: 'el artículo', titulo: 'el título', resumen: 'el resumen',
+                         autor: 'el autor', dominio: 'el sitio' };
+const ETIQUETA_OP = { contiene: 'contiene', palabra: 'tiene la palabra', es: 'es exactamente',
+                      empieza: 'empieza por', termina: 'termina en', regex: 'casa con' };
+
+async function pintarReglas() {
+  const caja = $('#reglas-lista');
+  const { reglas, silenciados } = await api('/api/reglas');
+
+  // El desplegable de ámbito se llena con las carpetas reales
+  const amb = $('#rg-ambito');
+  if (amb.options.length <= 1) {
+    amb.innerHTML = '<option value="">en todo</option>' +
+      state.folders.map(f => `<option value="c${f.id}">solo en ${esc(f.name)}</option>`).join('');
+  }
+
+  if (!reglas.length) {
+    caja.innerHTML = `<p class="ft-nota" style="margin-top:14px">Todavía no tienes filtros. ` +
+      `Prueba a silenciar «earnings call» si te aburren las transcripciones de resultados.</p>`;
+    return;
+  }
+  caja.innerHTML =
+    `<p class="ft-nota" style="margin:14px 0 8px">${silenciados} artículos escondidos ahora mismo.` +
+    (silenciados ? ` <button class="enlace-boton" id="ver-silenciados">Ver cuáles</button>` : '') + `</p>` +
+    reglas.map(r => `
+      <div class="regla ${r.tipo}" data-id="${r.id}">
+        <span class="regla-tipo">${r.tipo === 'silencio' ? 'Silencia' : 'Avisa'}</span>
+        <span class="regla-txt">${esc(ETIQUETA_CAMPO[r.campo] || r.campo)}
+          ${esc(ETIQUETA_OP[r.operador] || r.operador)}
+          <b>${esc(r.patron)}</b>${r.ambito_carpeta ? ' (solo en una carpeta)' : ''}</span>
+        <span class="regla-n mono">${r.aciertos}</span>
+        <button class="btn ghost small regla-onoff">${r.activa ? 'Activa' : 'Apagada'}</button>
+        <button class="btn danger small regla-del">Quitar</button>
+      </div>`).join('');
+
+  $('#ver-silenciados')?.addEventListener('click', () => {
+    $('#modal-settings').hidden = true;
+    irA({ type: 'silenciados', title: 'Artículos escondidos' });
+  });
+  $$('.regla', caja).forEach(el => {
+    const id = Number(el.dataset.id);
+    const r = reglas.find(x => x.id === id);
+    $('.regla-onoff', el).addEventListener('click', async () => {
+      await api(`/api/reglas/${id}`, { method: 'PATCH', body: { activa: !r.activa } });
+      await pintarReglas(); cargarLateral(); irA(state.view);
+    });
+    $('.regla-del', el).addEventListener('click', async () => {
+      const { silenciados } = await api(`/api/reglas/${id}`, { method: 'DELETE' });
+      toast(`Filtro quitado · ${silenciados} artículos escondidos ahora`);
+      await pintarReglas(); cargarLateral(); irA(state.view);
+    });
+  });
+}
+
+$('#btn-regla-crear').addEventListener('click', async () => {
+  const patron = $('#rg-patron').value.trim();
+  if (!patron) { toast('Escribe qué buscar'); return; }
+  const amb = $('#rg-ambito').value;
+  const btn = $('#btn-regla-crear');
+  btn.disabled = true;
+  try {
+    const r = await api('/api/reglas', { method: 'POST', body: {
+      tipo: $('#rg-tipo').value, campo: $('#rg-campo').value,
+      operador: $('#rg-operador').value, patron,
+      ambito_carpeta: amb.startsWith('c') ? Number(amb.slice(1)) : null,
+    }});
+    toast($('#rg-tipo').value === 'silencio'
+      ? `Listo: ${r.silenciados} artículos escondidos`
+      : `Listo: ${r.alertados} artículos con aviso`);
+    $('#rg-patron').value = '';
+    await pintarReglas(); cargarLateral(); irA(state.view);
+  } catch (e) { toast('No se pudo crear: ' + e.message); }
+  btn.disabled = false;
+});
+
+// ── Feeds de IA ───────────────────────────────────────────────────────
+
+async function pintarFeedsIA() {
+  const { ai_feeds } = await api('/api/ai_feeds');
+  const caja = $('#iafeeds-tabla');
+  caja.innerHTML = ai_feeds.length ? ai_feeds.map(f => `
+    <div class="regla" data-id="${f.id}">
+      <span class="regla-txt"><b>${esc(f.nombre)}</b><br>
+        <span class="ft-nota">${esc(f.descripcion.slice(0, 120))}</span></span>
+      <span class="regla-n mono">${f.articulos}</span>
+      <button class="btn ghost small iaf-pasar">Revisar ahora</button>
+      <button class="btn danger small iaf-del">Quitar</button>
+    </div>`).join('')
+    : '<p class="ft-nota" style="margin-top:12px">Aún no tienes feeds de IA.</p>';
+
+  $$('.regla', caja).forEach(el => {
+    const id = Number(el.dataset.id);
+    $('.iaf-pasar', el).addEventListener('click', async () => {
+      const b = $('.iaf-pasar', el); b.disabled = true; b.textContent = 'Revisando…';
+      const r = await api(`/api/ai_feeds/${id}/pasar`, { method: 'POST' });
+      toast(`${r.mirados} artículos revisados, ${r.dentro} añadidos`);
+      b.disabled = false; b.textContent = 'Revisar ahora';
+      pintarFeedsIA(); cargarLateral();
+    });
+    $('.iaf-del', el).addEventListener('click', async () => {
+      await api(`/api/ai_feeds/${id}`, { method: 'DELETE' });
+      toast('Feed de IA quitado');
+      pintarFeedsIA(); cargarLateral();
+    });
+  });
+
+  // Y en la barra lateral, como si fueran carpetas
+  const lateral = $('#aifeeds-lista');
+  lateral.innerHTML = ai_feeds.filter(f => f.activo).map(f => `
+    <button class="side-item" data-view="aifeed" data-id="${f.id}">
+      <span class="si-icon" aria-hidden="true">◈</span>
+      <span class="si-label">${esc(f.nombre)}</span>
+      <span class="badge">${f.sin_leer || ''}</span>
+    </button>`).join('');
+  $$('.side-item', lateral).forEach(b => b.addEventListener('click', () => {
+    const f = ai_feeds.find(x => x.id === Number(b.dataset.id));
+    irA({ type: 'aifeed', id: f.id, title: f.nombre });
+  }));
+}
+
+$('#btn-iaf-crear').addEventListener('click', async () => {
+  const nombre = $('#iaf-nombre').value.trim();
+  const descripcion = $('#iaf-desc').value.trim();
+  if (!nombre || !descripcion) { toast('Hacen falta nombre y descripción'); return; }
+  const btn = $('#btn-iaf-crear'); btn.disabled = true;
+  try {
+    await api('/api/ai_feeds', { method: 'POST', body: { nombre, descripcion } });
+    toast(`«${nombre}» creado. Se está clasificando; los artículos irán apareciendo.`);
+    $('#iaf-nombre').value = ''; $('#iaf-desc').value = '';
+    pintarFeedsIA();
+  } catch (e) { toast('No se pudo crear: ' + e.message); }
+  btn.disabled = false;
+});
+
+$('#btn-ayuda-busqueda').addEventListener('click', () => {
+  const s = $('#cmd-sintaxis'); s.hidden = !s.hidden;
+});
+
 // ── Ajustes ───────────────────────────────────────────────────────────
 
 $('#btn-settings').addEventListener('click', abrirAjustes);
-function abrirAjustes() { abrirModal('#modal-settings'); pintarTablaFuentes(); pintarClaves(); }
+function abrirAjustes() {
+  abrirModal('#modal-settings');
+  pintarTablaFuentes(); pintarClaves(); pintarReglas(); pintarFeedsIA();
+}
 
 $$('.tab').forEach(t => t.addEventListener('click', () => {
   $$('.tab').forEach(x => {

@@ -220,7 +220,16 @@ def agrupar(
                 dsu.union(i, j)
             else:
                 # Regla d: ratio de similitud textil
-                ratio = difflib.SequenceMatcher(None, norms[i], norms[j]).ratio()
+                # SequenceMatcher no es simétrico: comparar A con B puede dar
+                # 0,737 y B con A, 0,821. Con un solo sentido, dos titulares de
+                # formato idéntico pero asunto distinto ("Cable One (CABO) Q2
+                # 2026 Earnings Call Transcript" y el de otra empresa) se
+                # agrupaban según el orden de la lista, ocultando un artículo
+                # legítimo. Se toma el sentido más bajo: ante la duda, no fundir.
+                ratio = min(
+                    difflib.SequenceMatcher(None, norms[i], norms[j]).ratio(),
+                    difflib.SequenceMatcher(None, norms[j], norms[i]).ratio(),
+                )
                 if ratio >= umbral:
                     dsu.union(i, j)
 

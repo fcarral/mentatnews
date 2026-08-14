@@ -11,7 +11,7 @@
 <link rel="icon" href="/static/logo-mentat.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/logo-mentat.svg">
 <!-- Fuentes autoalojadas (@font-face en app.css). Sin CDNs. -->
-<link rel="stylesheet" href="/static/app.css?v=20260814f">
+<link rel="stylesheet" href="/static/app.css?v=20260814h">
 </head>
 <body data-densidad="comoda">
 
@@ -54,8 +54,10 @@
       <button class="side-item" data-view="today"><span class="si-icon" aria-hidden="true">☀</span><span class="si-label">Hoy</span><span class="badge" id="badge-today"></span></button>
       <button class="side-item activa" data-view="unread"><span class="si-icon" aria-hidden="true">◉</span><span class="si-label">Sin leer</span><span class="badge" id="badge-unread"></span></button>
       <button class="side-item" data-view="all"><span class="si-icon" aria-hidden="true">≡</span><span class="si-label">Todo</span></button>
+      <button class="side-item" data-view="alertas"><span class="si-icon" aria-hidden="true">!</span><span class="si-label">Alertas</span><span class="badge" id="badge-alertas"></span></button>
       <button class="side-item" data-view="saved"><span class="si-icon" aria-hidden="true">★</span><span class="si-label">Guardados</span><span class="badge" id="badge-saved"></span></button>
     </div>
+    <div class="side-section" id="aifeeds-lista"><!-- feeds de IA --></div>
     <div class="side-section" id="tree"><!-- carpetas y fuentes --></div>
     <div class="side-foot mono" id="side-foot"></div>
   </nav>
@@ -116,6 +118,13 @@
       <span><kbd>↑</kbd><kbd>↓</kbd> moverse</span>
       <span><kbd>↵</kbd> abrir</span>
       <span><kbd>esc</kbd> cerrar</span>
+      <button class="cmd-ayuda" id="btn-ayuda-busqueda" type="button">sintaxis de búsqueda</button>
+    </div>
+    <div class="cmd-sintaxis" id="cmd-sintaxis" hidden>
+      <div><code>incendio AND huelva</code> ambos términos · <code>a OR b</code> cualquiera · <code>-palabra</code> excluir</div>
+      <div><code>"frase exacta"</code> literal · <code>incend*</code> empieza por</div>
+      <div><code>fuente:xataka</code> · <code>tema:España</code> · <code>autor:nombre</code></div>
+      <div><code>desde:7d</code> o <code>desde:2026-08-01</code> · <code>hasta:</code> · <code>estado:sinleer</code> · <code>tiene:imagen</code></div>
     </div>
   </div>
 </div>
@@ -162,12 +171,58 @@
     <div class="modal-body">
       <div class="tabs" role="tablist">
         <button class="tab activa" data-tab="fuentes" role="tab" aria-selected="true">Fuentes</button>
+        <button class="tab" data-tab="filtros" role="tab" aria-selected="false">Filtros y alertas</button>
+        <button class="tab" data-tab="iafeeds" role="tab" aria-selected="false">Feeds de IA</button>
         <button class="tab" data-tab="lectura" role="tab" aria-selected="false">Lectura</button>
         <button class="tab" data-tab="opml" role="tab" aria-selected="false">OPML</button>
         <button class="tab" data-tab="api" role="tab" aria-selected="false">API</button>
       </div>
 
       <div class="tabpane" id="tab-fuentes" role="tabpanel"></div>
+
+      <div class="tabpane" id="tab-filtros" role="tabpanel" hidden>
+        <p class="cat-nota">Un <b>filtro de silencio</b> esconde los artículos que cumplan la condición; una <b>alerta</b> los destaca. No hay límite de cuántos crear.</p>
+        <div class="regla-form">
+          <select id="rg-tipo" aria-label="Tipo de regla">
+            <option value="silencio">Silenciar</option>
+            <option value="alerta">Avisarme</option>
+          </select>
+          <span>cuando</span>
+          <select id="rg-campo" aria-label="Campo">
+            <option value="cualquiera">el artículo</option>
+            <option value="titulo">el título</option>
+            <option value="resumen">el resumen</option>
+            <option value="autor">el autor</option>
+            <option value="dominio">el sitio</option>
+          </select>
+          <select id="rg-operador" aria-label="Condición">
+            <option value="contiene">contenga</option>
+            <option value="palabra">tenga la palabra</option>
+            <option value="es">sea exactamente</option>
+            <option value="empieza">empiece por</option>
+            <option value="termina">termine en</option>
+            <option value="regex">case con la expresión</option>
+          </select>
+          <input id="rg-patron" type="text" placeholder="texto…" aria-label="Texto a buscar">
+          <select id="rg-ambito" aria-label="Dónde aplica">
+            <option value="">en todo</option>
+          </select>
+          <button class="btn" id="btn-regla-crear">Crear</button>
+        </div>
+        <div id="reglas-lista"></div>
+      </div>
+
+      <div class="tabpane" id="tab-iafeeds" role="tabpanel" hidden>
+        <p class="cat-nota">Describe un tema con tus palabras y se comporta como una carpeta: cada artículo que entra se clasifica solo. Di también qué <b>no</b> quieres — funciona mejor.</p>
+        <div class="addrow">
+          <input id="iaf-nombre" type="text" placeholder="Nombre (p. ej. Mundial de ajedrez)" aria-label="Nombre del feed de IA">
+        </div>
+        <div class="addrow">
+          <input id="iaf-desc" type="text" placeholder="Qué entra y qué no. P. ej.: partidas y noticias del Mundial; NO ajedrez online ni torneos menores" aria-label="Descripción">
+          <button class="btn" id="btn-iaf-crear">Crear</button>
+        </div>
+        <div id="iafeeds-tabla"></div>
+      </div>
 
       <div class="tabpane" id="tab-lectura" role="tabpanel" hidden>
         <div class="ajuste">
@@ -224,6 +279,6 @@
 
 <div class="toast mono" id="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="/static/app.js?v=20260814f"></script>
+<script src="/static/app.js?v=20260814h"></script>
 </body>
 </html>

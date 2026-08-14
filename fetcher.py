@@ -13,8 +13,11 @@ import httpx
 
 import netguard
 
-# Identifícate ante los servidores de los feeds. Cámbialo por tu propia URL.
-USER_AGENT = "MentatNews/1.0 (+https://github.com/fcarral/mentatnews)"
+# Solo para reintentar donde el user-agent propio recibe un portazo.
+UA_NAVEGADOR = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+)
 
 ALLOWED_TAGS = {
     "p", "a", "img", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li",
@@ -132,7 +135,7 @@ def fetch_and_parse(
     """Descarga y parsea un feed RSS/Atom desde una URL dada."""
     try:
         headers = {
-            "User-Agent": USER_AGENT
+            "User-Agent": "MentatNews/1.0 (+https://github.com/fcarral/mentatnews)"
         }
         if etag:
             headers["If-None-Match"] = etag
@@ -141,6 +144,11 @@ def fetch_and_parse(
 
         with netguard.SafeClient(timeout=timeout) as client:
             response = client.get(url, headers=headers)
+            # Algunos servidores (Substack, entre otros) cierran la puerta a
+            # cualquier user-agent que no parezca un navegador. Se reintenta una
+            # vez presentándose como tal antes de dar el feed por caído.
+            if response.status_code in (403, 406):
+                response = client.get(url, headers={**headers, "User-Agent": UA_NAVEGADOR})
 
         http_status: int | None = response.status_code
         res_etag: str | None = response.headers.get("etag")

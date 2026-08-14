@@ -107,6 +107,61 @@ CREATE TABLE IF NOT EXISTS api_keys (
     revoked INTEGER NOT NULL DEFAULT 0
 );
 
+-- Reglas de texto: las de silencio esconden un artículo, las de alerta lo
+-- destacan. Comparten motor y tabla porque solo cambian en qué se traduce el
+-- acierto; separarlas duplicaría el CRUD y la interfaz sin ganar nada.
+CREATE TABLE IF NOT EXISTS reglas (
+    id INTEGER PRIMARY KEY,
+    tipo TEXT NOT NULL CHECK (tipo IN ('silencio', 'alerta')),
+    nombre TEXT NOT NULL DEFAULT '',
+    campo TEXT NOT NULL DEFAULT 'cualquiera',
+    operador TEXT NOT NULL DEFAULT 'contiene',
+    patron TEXT NOT NULL,
+    sensible INTEGER NOT NULL DEFAULT 0,
+    ambito_carpeta INTEGER REFERENCES folders(id) ON DELETE CASCADE,
+    ambito_feed INTEGER REFERENCES feeds(id) ON DELETE CASCADE,
+    activa INTEGER NOT NULL DEFAULT 1,
+    aciertos INTEGER NOT NULL DEFAULT 0,
+    creada_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_reglas_tipo ON reglas(tipo) WHERE activa=1;
+
+-- Qué alerta disparó cada artículo. Un artículo puede disparar varias.
+CREATE TABLE IF NOT EXISTS alertas_articulo (
+    articulo_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    regla_id INTEGER NOT NULL REFERENCES reglas(id) ON DELETE CASCADE,
+    visto INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (articulo_id, regla_id)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_alertas_regla ON alertas_articulo(regla_id, articulo_id);
+CREATE INDEX IF NOT EXISTS idx_alertas_sin_ver ON alertas_articulo(articulo_id) WHERE visto=0;
+
+-- Feeds de IA: un tema descrito en lenguaje natural que se comporta como una
+-- carpeta. La pertenencia la decide un modelo barato al entrar cada artículo.
+CREATE TABLE IF NOT EXISTS ai_feeds (
+    id INTEGER PRIMARY KEY,
+    nombre TEXT NOT NULL UNIQUE,
+    descripcion TEXT NOT NULL,
+    activo INTEGER NOT NULL DEFAULT 1,
+    ultima_pasada TEXT,
+    creado_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ai_feed_articulo (
+    ai_feed_id INTEGER NOT NULL REFERENCES ai_feeds(id) ON DELETE CASCADE,
+    articulo_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    PRIMARY KEY (ai_feed_id, articulo_id)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_aifeed_art ON ai_feed_articulo(articulo_id);
+
+-- Los descartados se anotan igual que los aceptados: si no, cada pasada
+-- volvería a preguntarle al modelo por los mismos artículos.
+CREATE TABLE IF NOT EXISTS ai_feed_descartado (
+    ai_feed_id INTEGER NOT NULL REFERENCES ai_feeds(id) ON DELETE CASCADE,
+    articulo_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    PRIMARY KEY (ai_feed_id, articulo_id)
+) WITHOUT ROWID;
+
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -223,6 +278,10 @@ def init_db() -> None:
     _añadir_columna(conn, "articles", "fulltext", "TEXT")
     _añadir_columna(conn, "articles", "sort_at", "TEXT")
     _añadir_columna(conn, "articles", "image_url", "TEXT NOT NULL DEFAULT ''")
+    # Silenciado por una regla: el artículo se guarda igual —para poder revisarlo
+    # y para que quitar la regla lo devuelva— pero no aparece en las listas.
+    _añadir_columna(conn, "articles", "silenciado", "INTEGER NOT NULL DEFAULT 0")
+    _añadir_columna(conn, "articles", "motivo_silencio", "INTEGER")
     _añadir_columna(conn, "feeds", "favicon_at", "TEXT")
     conn.executescript(SCHEMA)
 

@@ -15,9 +15,12 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Res
 from fastapi.staticfiles import StaticFiles
 
 import ai as ai_mod
+import busqueda
 import db
 import dedup
 import endpoints_portada
+import endpoints_aifeeds
+import endpoints_reglas
 import extractor
 import fetcher
 import limpieza
@@ -123,8 +126,13 @@ def fetch_one_feed(feed_row: dict) -> dict:
         return {"feed_id": fid, "status": "error", "new": 0, "error": res["error"]}
 
     new = 0
+    nuevos_ids: list[int] = []
     if res["status"] == "ok":
+        antes = conn.execute("SELECT COALESCE(MAX(id),0) m FROM articles").fetchone()["m"]
         new = upsert_articles(fid, res["entries"])
+        if new:
+            nuevos_ids = [r["id"] for r in conn.execute(
+                "SELECT id FROM articles WHERE id > ? AND feed_id = ?", (antes, fid))]
         # título/site/descripción solo se rellenan si el feed aún no los tiene.
         # res["favicon_url"] se descarta a propósito: apunta a Google (ver
         # _bajar_favicon).
@@ -141,11 +149,27 @@ def fetch_one_feed(feed_row: dict) -> dict:
         (res["etag"], res["last_modified"], now, res["status"], fid),
     )
     conn.commit()
-    return {"feed_id": fid, "status": res["status"], "new": new, "error": ""}
+    # Los filtros de silencio y las alertas se aplican a lo que acaba de entrar,
+    # no al listar: así una lista no paga el coste de evaluar reglas cada vez.
+    if nuevos_ids:
+        try:
+            endpoints_reglas.marcar_articulos_nuevos(nuevos_ids)
+        except Exception:
+            log.exception("reglas: no se pudieron aplicar a los artículos nuevos")
+    return {"feed_id": fid, "status": res["status"], "new": new, "error": "",
+            "nuevos_ids": nuevos_ids}
+
+
+# Un servidor a la vez: pedirle a Reddit sus dos feeds en paralelo devuelve 429,
+# y 20minutos responde 403 bajo varias peticiones simultáneas. El límite global
+# sigue mandando; esto solo evita pisar al mismo dominio.
+_sem_dominio: dict[str, asyncio.Semaphore] = {}
 
 
 async def fetch_feed_async(feed_row: dict) -> dict:
-    async with _fetch_sem:
+    dominio = (urlparse(feed_row["url"]).hostname or "").lower()
+    sem_dom = _sem_dominio.setdefault(dominio, asyncio.Semaphore(1))
+    async with _fetch_sem, sem_dom:
         return await asyncio.to_thread(fetch_one_feed, feed_row)
 
 
@@ -308,6 +332,14 @@ async def scheduler_loop() -> None:
                 if resultado["hechas"]:
                     log.info("portadas: %d renovadas, %d aún frescas",
                              resultado["hechas"], resultado["frescas"])
+            # Los feeds de IA van comiendo lo pendiente poco a poco. Cada pasada
+            # es un puñado de llamadas a un modelo barato; repartirlas en el
+            # tiempo evita tanto el pico de gasto como el de latencia.
+            if tick % 3 == 0:
+                resultado = await endpoints_aifeeds.pasar_todos()
+                if resultado["mirados"]:
+                    log.info("feeds de IA: %d artículos mirados, %d dentro",
+                             resultado["mirados"], resultado["dentro"])
             if tick % 30 == 0:
                 await asyncio.to_thread(db.checkpoint_wal)
             if tick % 1440 == 0:
@@ -341,6 +373,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="MentatNews", lifespan=lifespan)
 app.include_router(endpoints_portada.router)
+app.include_router(endpoints_reglas.router)
+app.include_router(endpoints_aifeeds.router)
 
 
 @app.middleware("http")
@@ -542,10 +576,16 @@ HOY_FIN = "strftime('%Y-%m-%dT%H:%M:%SZ','now','-6 hours','start of day','+1 day
 def list_articles(feed_id: int | None = None, folder_id: int | None = None,
                   unread: int = 0, saved: int = 0, today: int = 0,
                   q: str | None = None, limit: int = 50, before_id: int | None = None,
-                  full: int = 0):
+                  full: int = 0, incluir_silenciados: int = 0,
+                  solo_silenciados: int = 0, alertas: int = 0,
+                  ai_feed: int | None = None):
     conn = db.get_db()
     limit = max(1, min(200, limit))
     where, vals = ["1=1"], []
+    if solo_silenciados:
+        where.append("a.silenciado=1")
+    elif not incluir_silenciados:
+        where.append("a.silenciado=0")
     if feed_id:
         where.append("a.feed_id=?"); vals.append(feed_id)
     if folder_id:
@@ -558,10 +598,47 @@ def list_articles(feed_id: int | None = None, folder_id: int | None = None,
         where.append("a.saved=1")
     if today:
         where.append(f"{SORT} >= {HOY_INI} AND {SORT} < {HOY_FIN}")
+    if alertas:
+        where.append("a.id IN (SELECT articulo_id FROM alertas_articulo)")
+    if ai_feed:
+        where.append(
+            "a.id IN (SELECT articulo_id FROM ai_feed_articulo WHERE ai_feed_id=?)")
+        vals.append(ai_feed)
+    aviso_busqueda = ""
     if q:
-        fts = " ".join(f'"{t}"' for t in q.replace('"', "").split())
-        where.append("a.id IN (SELECT rowid FROM articles_fts WHERE articles_fts MATCH ?)")
-        vals.append(fts)
+        # Búsqueda avanzada: operadores, frases, exclusiones y filtros por campo
+        # (fuente:, tema:, desde:, estado:…). Antes se troceaba la consulta y se
+        # entrecomillaba cada palabra, así que "incendio AND Huelva" buscaba la
+        # palabra literal "AND" y no devolvía nada.
+        analizada = busqueda.parsear(q)
+        if analizada["error"]:
+            aviso_busqueda = analizada["error"]
+        else:
+            f = analizada["filtros"]
+            if analizada["fts"]:
+                where.append(
+                    "a.id IN (SELECT rowid FROM articles_fts WHERE articles_fts MATCH ?)")
+                vals.append(analizada["fts"])
+            for nombre in f.get("fuente", []) or []:
+                where.append("f.title LIKE ?"); vals.append(f"%{nombre}%")
+            for tema in f.get("tema", []) or []:
+                where.append(
+                    "f.folder_id IN (SELECT id FROM folders WHERE name LIKE ?)")
+                vals.append(f"%{tema}%")
+            for autor in f.get("autor", []) or []:
+                where.append("a.author LIKE ?"); vals.append(f"%{autor}%")
+            if f.get("desde"):
+                where.append(f"{SORT} >= ?"); vals.append(f["desde"])
+            if f.get("hasta"):
+                where.append(f"{SORT} <= ?"); vals.append(f["hasta"])
+            if f.get("estado") == "sinleer":
+                where.append("a.read=0")
+            elif f.get("estado") == "leido":
+                where.append("a.read=1")
+            elif f.get("estado") == "guardado":
+                where.append("a.saved=1")
+            if f.get("tiene_imagen"):
+                where.append("a.image_url <> ''")
     if before_id:
         ref = conn.execute(
             f"SELECT {SORT} s, id FROM articles a WHERE id=?", (before_id,)).fetchone()
@@ -908,7 +985,10 @@ def stats():
         f"""SELECT
              (SELECT COUNT(*) FROM feeds) feeds,
              (SELECT COUNT(*) FROM articles WHERE sort_at >= {HOY_INI} AND sort_at < {HOY_FIN}) today,
-             (SELECT COUNT(*) FROM feeds WHERE last_status='error') feeds_error"""
+             (SELECT COUNT(*) FROM feeds WHERE last_status='error') feeds_error,
+             (SELECT COUNT(*) FROM alertas_articulo x JOIN articles a ON a.id=x.articulo_id
+              WHERE a.read=0 AND a.silenciado=0) alertas,
+             (SELECT COUNT(*) FROM articles WHERE silenciado=1) silenciados"""
     ).fetchone()
     return {
         "feeds": row["feeds"],
@@ -917,6 +997,8 @@ def stats():
         "saved": cont.get("saved", 0),
         "today": row["today"],
         "feeds_error": row["feeds_error"],
+        "alertas": row["alertas"],
+        "silenciados": row["silenciados"],
         "scheduler_last_run": _scheduler_last_run,
     }
 
