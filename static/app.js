@@ -726,6 +726,18 @@ $$('.dens-btn').forEach(b => b.addEventListener('click', () => {
   prefs.densidad = b.dataset.densidad; aplicarPrefs(); guardarPrefs();
 }));
 
+// En el teléfono el tamaño de letra tiene que estar a un toque, no enterrado en
+// ajustes: el botón Aa va rotando por los tamaños y vuelve a empezar.
+const PASOS_LETRA = [100, 115, 130, 145];
+$('#btn-letra').addEventListener('click', () => {
+  const i = PASOS_LETRA.findIndex(p => p >= prefs.escala);
+  prefs.escala = PASOS_LETRA[(i + 1) % PASOS_LETRA.length];
+  $('#set-escala').value = prefs.escala;
+  $('#set-escala-val').textContent = `${prefs.escala} %`;
+  aplicarPrefs(); guardarPrefs();
+  toast(`Letra al ${prefs.escala} %`);
+});
+
 $('#btn-mark-read').addEventListener('click', async () => {
   const v = state.view, body = {};
   if (v.type === 'feed') body.feed_id = v.id;

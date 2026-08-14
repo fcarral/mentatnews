@@ -410,7 +410,10 @@ body[data-densidad="revista"]:not(.leyendo) .arow { padding-left:0; padding-righ
    enteros por titular, y a este cuerpo uno de 260 caracteres ocupa siete líneas
    y aplasta el resto de la portada. */
 .pp-titulo {
-  font-size: clamp(22px, calc(2.4vw * var(--escala)), calc(32px * var(--escala)));
+  /* El mínimo del clamp también se multiplica por la escala: si no, en pantalla
+     estrecha gana siempre ese mínimo fijo y agrandar la letra no hacía nada en
+     el teléfono, que es justo donde más falta hace. */
+  font-size: clamp(calc(21px * var(--escala)), calc(2.4vw * var(--escala)), calc(32px * var(--escala)));
   font-weight:800; line-height:1.13; letter-spacing:-.022em; color:var(--ink);
   margin-bottom:10px;
   display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
@@ -500,7 +503,8 @@ body.leyendo .lector { display:block; }
 .lector-acciones .btn.on { color: var(--warn); border-color: var(--warn); }
 #btn-full.on { color: var(--cyan); border-color: var(--cyan); }
 #lector-titulo {
-  font-size: clamp(21px, 2.5vw, 29px); font-weight:800; line-height:1.2;
+  font-size: clamp(calc(21px * var(--escala)), calc(2.5vw * var(--escala)), calc(29px * var(--escala)));
+  font-weight:800; line-height:1.2;
   letter-spacing:-.018em; margin-bottom:10px;
 }
 .lector-sub {
