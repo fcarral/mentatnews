@@ -87,7 +87,10 @@ img { max-width: 100%; }
   padding-top: env(safe-area-inset-top);
   background: var(--panel-bg); backdrop-filter: blur(var(--blur));
   border-bottom: 1px solid var(--panel-bd);
-  position: relative; z-index: 60;
+  /* Por encima del lector (90): el lector empieza justo debajo de esta barra,
+     así que no tapa nada, pero sin esto lo que cuelga de aquí —el control de
+     tamaño de letra— quedaba detrás del artículo en el teléfono. */
+  position: relative; z-index: 95;
 }
 .topnav::after {
   content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px;
@@ -237,11 +240,14 @@ body.leyendo .layout {
 .arow.activa { background: var(--panel-bg); border-left-color: var(--cyan); }
 .arow .favicon { width:16px; height:16px; border-radius:4px; margin-top:2px; grid-row: span 2; }
 .a-src {
-  font-family:var(--mono); font-size:10.5px; color:var(--ink3);
+  font-family:var(--mono); font-size: calc(10.5px * var(--escala)); color:var(--ink3);
   display:flex; gap:8px; align-items:center; overflow:hidden; white-space:nowrap; min-width:0;
 }
 .a-src .fname { overflow:hidden; text-overflow:ellipsis; }
-.a-hora { font-family:var(--mono); font-size:10.5px; color:var(--ink3); white-space:nowrap; }
+.a-hora {
+  font-family:var(--mono); font-size: calc(10.5px * var(--escala));
+  color:var(--ink3); white-space:nowrap;
+}
 .a-titulo {
   grid-column: 2 / 4; font-size: calc(14.5px * var(--escala)); font-weight:600;
   line-height:1.34; color:var(--ink); letter-spacing:-.004em;
@@ -829,3 +835,23 @@ body.leyendo .lector { display:block; }
 .x-pie .x-ir { margin-top:0; margin-left:auto; }
 .x-ir:hover { border-color:var(--cyan); color:var(--cyan); }
 .x-ir.suelto { margin-top:0; }
+
+/* ── Tamaño de letra ────────────────────────────────────────────────
+   Los cuatro tamaños a la vista, con el de ahora marcado. */
+.letra-caja { position:relative; display:inline-flex; }
+.letra-menu {
+  position:absolute; top:calc(100% + 7px); right:0; z-index:200;
+  display:flex; align-items:center; gap:2px; padding:5px;
+  background:#fff; border:1px solid var(--edge); border-radius:12px;
+  box-shadow: 0 8px 26px rgba(20,50,80,.16);
+}
+.letra-menu button {
+  width:38px; height:38px; border:none; border-radius:9px;
+  background:none; cursor:pointer; color:var(--ink2);
+  font-family:var(--sans); font-weight:700; line-height:1;
+}
+.letra-menu button:hover { background:var(--tile); color:var(--ink); }
+.letra-menu button[aria-checked="true"] { background:var(--ink); color:#fff; }
+@media (max-width: 860px) {
+  .letra-menu button { width:44px; height:44px; }   /* dedo, no ratón */
+}

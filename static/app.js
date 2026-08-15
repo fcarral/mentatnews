@@ -110,7 +110,11 @@ function aplicarPrefs() {
   document.body.dataset.densidad = prefs.densidad;
   const raiz = document.documentElement.style;
   raiz.setProperty('--escala', (prefs.escala / 100).toFixed(2));
-  raiz.setProperty('--lectura-tam', prefs.tam + 'px');
+  // El tamaño de lectura es el del ajuste fino multiplicado por la escala: si
+  // no, el botón Aa agrandaba las listas y la portada pero dejaba el texto del
+  // artículo clavado en 16 px, que es justo donde más se lee en el teléfono.
+  raiz.setProperty('--lectura-tam',
+    (prefs.tam * prefs.escala / 100).toFixed(1) + 'px');
   raiz.setProperty('--lectura-ancho', prefs.ancho + 'ch');
   raiz.setProperty('--lectura-fam', prefs.familia === 'serif'
     ? 'Georgia, "Times New Roman", serif' : "'IBM Plex Sans', system-ui, sans-serif");
@@ -1032,14 +1036,36 @@ $$('.dens-btn').forEach(b => b.addEventListener('click', () => {
 
 // En el teléfono el tamaño de letra tiene que estar a un toque, no enterrado en
 // ajustes: el botón Aa va rotando por los tamaños y vuelve a empezar.
-const PASOS_LETRA = [100, 115, 130, 145];
-$('#btn-letra').addEventListener('click', () => {
-  const i = PASOS_LETRA.findIndex(p => p >= prefs.escala);
-  prefs.escala = PASOS_LETRA[(i + 1) % PASOS_LETRA.length];
-  $('#set-escala').value = prefs.escala;
-  $('#set-escala-val').textContent = `${prefs.escala} %`;
+// El botón daba una vuelta a ciegas: cuatro toques y la letra volvía a la más
+// pequeña, así que tocarlo para agrandar a veces empequeñecía. Ahora enseña los
+// cuatro tamaños, marca en cuál estás y no hay salto que no hayas pedido.
+function ponerEscala(valor) {
+  prefs.escala = valor;
+  $('#set-escala').value = valor;
+  $('#set-escala-val').textContent = `${valor} %`;
   aplicarPrefs(); guardarPrefs();
-  toast(`Letra al ${prefs.escala} %`);
+  $$('#letra-menu button').forEach(b =>
+    b.setAttribute('aria-checked', String(+b.dataset.escala === valor)));
+}
+
+function abrirMenuLetra(abrir) {
+  const menu = $('#letra-menu');
+  menu.hidden = !abrir;
+  $('#btn-letra').setAttribute('aria-expanded', String(abrir));
+  if (abrir) ponerEscala(prefs.escala);      // deja marcado el tamaño de ahora
+}
+
+$('#btn-letra').addEventListener('click', e => {
+  e.stopPropagation();
+  abrirMenuLetra($('#letra-menu').hidden);
+});
+$$('#letra-menu button').forEach(b => b.addEventListener('click', e => {
+  e.stopPropagation();
+  ponerEscala(+b.dataset.escala);
+  abrirMenuLetra(false);
+}));
+document.addEventListener('click', e => {
+  if (!$('#letra-menu').hidden && !e.target.closest('.letra-caja')) abrirMenuLetra(false);
 });
 
 $('#btn-mark-read').addEventListener('click', async () => {
@@ -1265,10 +1291,7 @@ document.addEventListener('keydown', e => {
     case '+': case '=': case '-': {          // agrandar o encoger la letra
       e.preventDefault();
       const paso = e.key === '-' ? -5 : 5;
-      prefs.escala = Math.min(145, Math.max(90, prefs.escala + paso));
-      $('#set-escala').value = prefs.escala;
-      $('#set-escala-val').textContent = `${prefs.escala} %`;
-      aplicarPrefs(); guardarPrefs();
+      ponerEscala(Math.min(145, Math.max(90, prefs.escala + paso)));
       toast(`Letra al ${prefs.escala} %`);
       break;
     }
