@@ -391,13 +391,29 @@ function pintarFila(a) {
   el.innerHTML =
     img + iconoFeed(a) +
     `<span class="a-src"><span class="fname">${esc(a.feed_title || '')}</span>` +
-      (a.saved ? '<span class="a-estrella" aria-label="Guardado">★</span>' : '') +
       (a.duplicados ? `<span class="a-mas">+${a.duplicados}</span>` : '') +
     `</span>` +
     `<span class="a-hora">${fmtHora(a.published_at || a.fetched_at)}</span>` +
+    // Guardar sin tener que abrir el artículo: en el teléfono es la única
+    // manera cómoda de ir apartando cosas mientras se baja por la lista.
+    `<button class="a-guardar${a.saved ? ' on' : ''}" data-guardar="${a.id}"
+             aria-label="${a.saved ? 'Quitar de guardados' : 'Guardar'}"
+             aria-pressed="${!!a.saved}" title="Guardar (s)">★</button>` +
     `<h2 class="a-titulo">${esc(a.title)}</h2>` +
     `<p class="a-resumen">${esc((a.summary_limpio ?? extracto(a.summary)).slice(0, 240))}</p>`;
-  el.addEventListener('click', () => abrirArticulo(a.id));
+  el.addEventListener('click', e => {
+    const estrella = e.target.closest('[data-guardar]');
+    if (estrella) {
+      e.stopPropagation();
+      marcarArticulo(a.id, { saved: !a.saved });
+      a.saved = !a.saved;
+      estrella.classList.toggle('on', a.saved);
+      estrella.setAttribute('aria-pressed', String(a.saved));
+      estrella.setAttribute('aria-label', a.saved ? 'Quitar de guardados' : 'Guardar');
+      return;
+    }
+    abrirArticulo(a.id);
+  });
   el.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirArticulo(a.id); }
   });
@@ -912,10 +928,12 @@ async function marcarArticulo(id, flags) {
   const fila = $(`.arow[data-id="${id}"]`);
   if (fila && 'read' in flags) fila.classList.toggle('leido', !!flags.read);
   if (fila && 'saved' in flags) {
-    const src = $('.a-src', fila);
-    const est = $('.a-estrella', fila);
-    if (flags.saved && !est) src.insertAdjacentHTML('beforeend', '<span class="a-estrella">★</span>');
-    if (!flags.saved && est) est.remove();
+    const estrella = $('[data-guardar]', fila);
+    if (estrella) {
+      estrella.classList.toggle('on', !!flags.saved);
+      estrella.setAttribute('aria-pressed', String(!!flags.saved));
+      estrella.setAttribute('aria-label', flags.saved ? 'Quitar de guardados' : 'Guardar');
+    }
   }
   actualizarBotonesLector();
   refrescarContadores();
@@ -956,6 +974,34 @@ $('#btn-save').addEventListener('click', () => {
 $('#btn-toggle-read').addEventListener('click', () => {
   const a = state.actual; if (a) marcarArticulo(a.id, { read: !a.read });
 });
+
+// ── Compartir ─────────────────────────────────────────────────────────
+// Se comparte el enlace del medio, no el de aquí dentro: esta aplicación está
+// tras un acceso propio y quien recibe el mensaje no podría abrirla.
+async function compartirArticulo(a) {
+  if (!a) return;
+  const url = a.url || a.site_url;
+  if (!url) { toast('Este artículo no trae enlace'); return; }
+  const datos = { title: a.title || 'MentatNews', text: a.title || '', url };
+
+  if (navigator.share) {
+    try {
+      await navigator.share(datos);
+      return;                                   // el teléfono ya se encargó
+    } catch (e) {
+      if (e.name === 'AbortError') return;       // lo cerró a propósito
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(`${a.title}\n${url}`);
+    toast('Enlace copiado');
+  } catch {
+    // Sin permiso de portapapeles (o sin https): que al menos lo pueda copiar.
+    window.prompt('Copia el enlace:', url);
+  }
+}
+
+$('#btn-share').addEventListener('click', () => compartirArticulo(state.actual));
 
 // ── Gesto de volver ───────────────────────────────────────────────────
 // Arrastrar desde el borde izquierdo cierra el artículo, como en cualquier app
@@ -1295,6 +1341,9 @@ document.addEventListener('keydown', e => {
       toast(`Letra al ${prefs.escala} %`);
       break;
     }
+    case 'c':
+      if (state.actual) { e.preventDefault(); compartirArticulo(state.actual); }
+      break;
     case 'r': e.preventDefault(); $('#btn-refresh').click(); break;
     case 'a': e.preventDefault(); abrirModal('#modal-add'); break;
     case 'A':
